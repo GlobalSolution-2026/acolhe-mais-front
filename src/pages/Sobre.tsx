@@ -58,7 +58,7 @@ export default function Sobre() {
         </div>
       </section>
 
-      {/* 3. A SITUAÇÃO EM SÃO PAULO (Estatísticas Limpas) */}
+      {/* 3. A SITUAÇÃO EM SÃO PAULO*/}
       <section className="bg-[#e6f2ed] py-24 px-6 lg:px-16 xl:px-24">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
@@ -86,7 +86,7 @@ export default function Sobre() {
         </div>
       </section>
 
-      {/* 4. MERCADO E BENCHMARK (Substituído por Cartões Modernos) */}
+      {/* 4. MERCADO E BENCHMARK  */}
       <section className="py-24 px-6 lg:px-16 xl:px-24 max-w-7xl mx-auto bg-white rounded-3xl my-12">
         <div className="mb-16">
           <h2 className="text-4xl lg:text-5xl font-serif text-[#004d3a] mb-6">Mercado e Alternativas</h2>
@@ -126,7 +126,7 @@ export default function Sobre() {
             </div>
           </div>
 
-          {/* Card 3: O Nosso Diferencial (Acolhe+) */}
+          {/* Card 3: O Nosso Diferencial*/}
           <div className="bg-[#004d3a] text-white p-8 rounded-3xl flex flex-col justify-between shadow-xl relative overflow-hidden">
             <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#00d186]/10 rounded-full blur-2xl"></div>
             <div>
@@ -173,9 +173,7 @@ export default function Sobre() {
               <li>MORAIS, R. M. et al. <em>Gestão do absenteísmo na APS...</em> (2023).</li>
               <li>SÃO PAULO. <em>Programa de Metas 2025-2028 e Censo UBS</em>.</li>
             </ul>
-            <button className="mt-8 text-[#b5ebd3] font-medium hover:text-white transition-colors border-b border-[#b5ebd3] hover:border-white pb-0.5">
-              Aceder à bibliografia completa &gt;
-            </button>
+        
           </div>
         </div>
       </section>
