@@ -21,7 +21,7 @@ export default function Header() {
         <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm text-stone-600 font-medium">
           <Link to="/" className="hover:text-[#148565] transition-colors">Home</Link>
           <Link to="/sobre" className="hover:text-[#148565] transition-colors">Sobre</Link>
-          <Link to="/solucao/1" className="hover:text-[#148565] transition-colors">Solução</Link>
+          <Link to="/solucao" className="hover:text-[#148565] transition-colors">Solução</Link>
           <Link to="/simulador" className="hover:text-[#148565] transition-colors">Simulador</Link>
           <Link to="/faq" className="hover:text-[#148565] transition-colors">FAQ</Link>
           <Link to="/contato" className="hover:text-[#148565] transition-colors">Contato</Link>
