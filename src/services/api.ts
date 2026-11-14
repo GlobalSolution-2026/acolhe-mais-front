@@ -1,4 +1,3 @@
-// src/services/api.ts
 
 // Quando a equipa de Java fizer o deploy no Render, basta trocar esta URL
 const BASE_URL = 'https://api-java-acolhemais-exemplo.onrender.com';
@@ -33,9 +32,7 @@ async function fetchConfig<T>(endpoint: string, options?: RequestInit): Promise<
   }
 }
 
-// ==========================================
 // SERVIÇOS EXPORTADOS PARA USAR NAS PÁGINAS
-// ==========================================
 
 export const api = {
   // Exemplo de operação de LEITURA (GET) exigida pelo edital

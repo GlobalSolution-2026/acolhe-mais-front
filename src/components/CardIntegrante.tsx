@@ -10,7 +10,6 @@ interface CardProps {
 }
 
 export default function CardIntegrante({ nome, rm, turma, foto, github, linkedin }: CardProps) {
-  // Extrai o primeiro nome para não quebrar o layout
   const primeiroNome = nome.split(' ')[0];
   const apelido = nome.split(' ').slice(1).join(' ');
 

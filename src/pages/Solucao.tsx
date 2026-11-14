@@ -44,7 +44,7 @@ export default function Solucao() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {/* Card 1 */}
+
           <div className="bg-[#013527] border border-[#00d186]/20 p-8 rounded-3xl flex flex-col justify-between shadow-lg hover:border-[#00d186]/50 transition-all">
             <div>
               <h3 className="text-xl font-bold text-white mb-3 leading-tight">Triagem<br/>Baseada em Dados</h3>
@@ -52,7 +52,7 @@ export default function Solucao() {
             </div>
           </div>
 
-          {/* Card 2 */}
+
           <div className="bg-[#013527] border border-[#00d186]/20 p-8 rounded-3xl flex flex-col justify-between shadow-lg hover:border-[#00d186]/50 transition-all">
             <div>
               <h3 className="text-xl font-bold text-white mb-3 leading-tight">Agendamento<br/>Inteligente (UBS)</h3>
@@ -60,7 +60,6 @@ export default function Solucao() {
             </div>
           </div>
 
-          {/* Card 3 */}
           <div className="bg-[#013527] border border-[#00d186]/20 p-8 rounded-3xl flex flex-col justify-between shadow-lg hover:border-[#00d186]/50 transition-all">
             <div>
               <h3 className="text-xl font-bold text-white mb-3 leading-tight">Previsão de<br/>Faltas com IA</h3>
@@ -68,7 +67,7 @@ export default function Solucao() {
             </div>
           </div>
 
-          {/* Card 4 */}
+
           <div className="bg-[#013527] border border-[#00d186]/20 p-8 rounded-3xl flex flex-col justify-between shadow-lg hover:border-[#00d186]/50 transition-all">
             <div>
               <h3 className="text-xl font-bold text-white mb-3 leading-tight">Fila de Espera<br/>Dinâmica</h3>
@@ -78,7 +77,7 @@ export default function Solucao() {
         </div>
       </section>
 
-      {/* 3. BENTO GRID (Fundo Claro) */}
+
       <section className="bg-[#f7f6f2] py-24 px-6 lg:px-16">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-12 items-end mb-16">
           <h2 className="text-4xl md:text-5xl font-serif text-[#024131] md:w-3/5 leading-tight">
@@ -101,7 +100,6 @@ export default function Solucao() {
             </div>
           </div>
 
-          {/* Bloco Verde Menta */}
           <div className="bg-[#00d186] rounded-3xl p-8 flex flex-col justify-between text-[#024131] aspect-square md:aspect-auto h-64 md:h-auto">
             <h3 className="text-2xl font-serif">Alinhamento Global</h3>
             <div className="space-y-2 mt-4">
@@ -117,13 +115,13 @@ export default function Solucao() {
             </div>
           </div>
 
-          {/* Bloco Azul/Verde Claro */}
+
           <div className="bg-[#b4ded4] rounded-3xl p-8 flex flex-col justify-between text-[#024131] aspect-square md:aspect-auto h-64 md:h-auto">
             <h3 className="text-2xl font-serif">Assistência nos níveis<br/>de complexidade</h3>
             <p className="mt-4 text-sm font-medium">SAMU 192, Pronto-Socorro, UPA e UBS.</p>
           </div>
 
-          {/* Bloco Verde Escuro Inferior */}
+
           <div className="md:col-span-2 bg-[#024131] rounded-3xl p-8 md:p-12 text-white flex flex-col md:flex-row justify-between items-center overflow-hidden relative">
              <div className="relative z-10 md:w-2/3">
                <h3 className="text-2xl md:text-3xl font-serif mb-4 leading-snug">O seu parceiro de confiança para triagem de sintomas de baixa gravidade, 24 horas por dia.</h3>
@@ -133,13 +131,13 @@ export default function Solucao() {
         </div>
       </section>
 
-      {/* 4. SEPARADOR DE IMAGEM */}
+
       <div className="w-full h-100">
         <img src="https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover" alt="Saúde em comunidade" />
       </div>
 
       
-      {/* 5. LISTA DE ATORES (Versão Estática Limpa) */}
+  
       <section className="bg-[#024131] py-24 px-6 lg:px-16">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16 items-center">
           
