@@ -2,7 +2,7 @@
  * Base de todas as chamadas do front (API Java, API Flask e ViaCEP).
  *
  * - requisitar(): chama o fetch real, mede o tempo, registra no painel de requisições
- *   (aba Status das APIs) e, se a resposta não for ok, lê o ErroResponse e lança o erro.
+ *   (aba Status das APIs) e, se a resposta não for ok, lê o ErroDTO { status, mensagem } e lança o erro.
  *   Assim a página só precisa mostrar a mensagem.
  * - simular(): o mesmo para o modo demonstração (quando a variável de ambiente está vazia):
  *   espera 400 ms para imitar a rede, executa a função do mock e registra a chamada como "demonstração".
@@ -10,7 +10,7 @@
  * Fica num arquivo separado porque api.ts (Java) e ia.ts (Flask) usam as duas funções,
  * e o agendamento em api.ts também chama a previsão de falta de ia.ts.
  */
-import type { ErroResponse, MetodoHttp, NomeApi, Requisicao } from "../types";
+import type { ErroDTO, MetodoHttp, NomeApi, Requisicao } from "../types";
 
 /** Erro de API com o código HTTP (ex.: 409 horário ocupado), para a tela decidir o que mostrar. */
 export class ErroApi extends Error {
@@ -23,9 +23,9 @@ export class ErroApi extends Error {
   }
 }
 
-/** Lança um ErroApi no formato do ErroResponse da API Java (usado pelos mocks). */
-export function falhar(erro: ErroResponse): never {
-  throw new ErroApi(erro.erro, erro.status);
+/** Lança um ErroApi no formato do ErroDTO da API Java (usado pelos mocks). */
+export function falhar(erro: ErroDTO): never {
+  throw new ErroApi(erro.mensagem, erro.status);
 }
 
 /** Espera alguns milissegundos (simula o tempo de rede no modo demonstração). */
@@ -67,7 +67,7 @@ function rotaDaUrl(url: string): string {
  * @param api qual API é (para o painel de requisições)
  * @param opcoes método e corpo; com corpo, o Content-Type JSON é colocado aqui
  * @returns a Response já conferida (resposta.ok)
- * @throws ErroApi com a mensagem do ErroResponse; TypeError quando não há conexão
+ * @throws ErroApi com a mensagem do ErroDTO; TypeError quando não há conexão
  */
 export async function requisitar(url: string, api: NomeApi, opcoes: RequestInit = {}): Promise<Response> {
   const metodo = (opcoes.method ?? "GET").toUpperCase() as MetodoHttp;
@@ -88,9 +88,9 @@ export async function requisitar(url: string, api: NomeApi, opcoes: RequestInit 
   registrar({ metodo, rota, api, status: resposta.status, tempoMs: Math.round(performance.now() - inicio), demonstracao: false });
 
   if (!resposta.ok) {
-    // A API Java devolve { status, erro }; se o corpo não for JSON, usa uma mensagem genérica.
-    const corpo = (await resposta.json().catch(() => null)) as Partial<ErroResponse> | null;
-    throw new ErroApi(corpo?.erro ?? `Erro ${resposta.status} ao chamar ${rota}.`, resposta.status);
+    // A API Java devolve o ErroDTO { status, mensagem }; se o corpo não for JSON, usa uma mensagem genérica.
+    const corpo = (await resposta.json().catch(() => null)) as Partial<ErroDTO> | null;
+    throw new ErroApi(corpo?.mensagem ?? `Erro ${resposta.status} ao chamar ${rota}.`, resposta.status);
   }
   return resposta;
 }

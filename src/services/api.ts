@@ -1,16 +1,23 @@
 /**
  * Serviços da API Java do Acolhe+ (Spring Boot, VITE_API_URL).
+ * Repositório da API: GlobalSolution-2026/Acolhe-Mais-Java. Os nomes dos campos seguem os DTOs dela.
  *
- * Cada função corresponde a um endpoint planejado e tem dois caminhos:
+ * Cada função corresponde a um endpoint e tem dois caminhos:
  * - com VITE_API_URL definida → fetch real (requisitar);
  * - sem a variável → modo demonstração: lê e altera o estado do mock (SimuladorContext)
  *   e espera 400 ms para imitar a rede (simular).
  * Ligar a API de verdade é só configurar a variável de ambiente.
  *
+ * Endpoints pedidos ao colega do Java e ainda não feitos (o front já chama assim):
+ * PUT /consultas/{id}/status, PUT /cidadaos/{id} só com contato, POST /cidadaos/login e GET /cidadaos?cns=.
+ *
  * As funções marcadas com "DEMONSTRAÇÃO: não existe na API Java" ficam sempre no mock
  * (lista do dia, oferta de vaga, orientação salva, balcão e ficha de saúde).
  */
-import type { CanalConfirmacao, Cidadao, CidadaoEntrada, Consulta, EntradaListaDoDia, FichaSaude, Horario, Unidade } from "../types";
+import type {
+  CanalConfirmacao, Cidadao, CidadaoAtualizacao, CidadaoEntrada, Consulta, ConsultaEntrada,
+  EntradaListaDoDia, FichaSaude, Horario, LoginEntrada, StatusConsultaEntrada, Unidade,
+} from "../types";
 import type { Orientacao } from "../types/orientacao";
 import type { EstadoSimulador } from "../context/estadoSimulador";
 import { agora } from "../lib/relogio";
@@ -22,6 +29,9 @@ import { liberarConsulta } from "./simulacao";
 
 /** URL da API Java; vazia = modo demonstração. */
 export const API_URL: string | undefined = import.meta.env.VITE_API_URL || undefined;
+
+/** Mensagem do 409 ao agendar (a mesma no mock e na API real, para a tela não depender do texto da API). */
+export const MENSAGEM_HORARIO_OCUPADO = "Este horário acabou de ser ocupado. Escolha outro.";
 
 /* ---------- Ligação com o estado do mock (modo demonstração) ---------- */
 
@@ -40,13 +50,32 @@ export function conectarStore(novo: Store | null): void {
 
 /** Devolve o estado do mock; erro 500 se o simulador ainda não estiver montado. */
 function obterStore(): Store {
-  if (!store) falhar({ status: 500, erro: "O simulador ainda não foi carregado." });
+  if (!store) falhar({ status: 500, mensagem: "O simulador ainda não foi carregado." });
   return store;
 }
 
-/** Próximo código livre de uma lista (imita o id gerado pelo banco). */
-function proximoCodigo(codigos: number[]): number {
-  return Math.max(0, ...codigos) + 1;
+/** Próximo id livre de uma lista (imita a sequence do banco Oracle). */
+function proximoId(ids: number[]): number {
+  return Math.max(0, ...ids) + 1;
+}
+
+/** Tira máscara (pontos, hífens, parênteses): CNS, CPF, CEP e telefones vão só com números para a API. */
+function soNumeros(texto: string | null | undefined): string {
+  return (texto ?? "").replace(/\D/g, "");
+}
+
+/**
+ * Converte o CidadaoSaidaDTO para o tipo do front: campos opcionais que a API devolve como null viram "".
+ * Assim as regras (ex.: temContatoValido) não precisam tratar null em todo lugar.
+ */
+function converterCidadao(json: Cidadao): Cidadao {
+  return {
+    ...json,
+    nrCelular: json.nrCelular ?? "",
+    nmContatoRecado: json.nmContatoRecado ?? "",
+    nrContatoRecado: json.nrContatoRecado ?? "",
+    nrCep: json.nrCep ?? "",
+  };
 }
 
 /* ---------- Unidade ---------- */
@@ -68,18 +97,18 @@ export async function listarUnidades(tipo?: Unidade["tpUnidade"]): Promise<Unida
 }
 
 /**
- * GET /unidades/{cdUnidade} — API Java
+ * GET /unidades/{idUnidade} — API Java
  * Busca uma unidade. Usada no topo da tela de horários do celular.
  * Erros esperados: 404 (unidade não existe).
  */
-export async function buscarUnidade(cdUnidade: number): Promise<Unidade> {
+export async function buscarUnidade(idUnidade: number): Promise<Unidade> {
   if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/unidades/${cdUnidade}`, "JAVA");
+    const resposta = await requisitar(`${API_URL}/unidades/${idUnidade}`, "JAVA");
     return resposta.json();
   }
-  return simular("GET", `/unidades/${cdUnidade}`, "JAVA", () => {
-    const unidade = obterStore().obterEstado().unidades.find((u) => u.cdUnidade === cdUnidade);
-    if (!unidade) falhar({ status: 404, erro: "Unidade não encontrada." });
+  return simular("GET", `/unidades/${idUnidade}`, "JAVA", () => {
+    const unidade = obterStore().obterEstado().unidades.find((u) => u.idUnidade === idUnidade);
+    if (!unidade) falhar({ status: 404, mensagem: "Unidade não encontrada" });
     return unidade;
   });
 }
@@ -87,93 +116,133 @@ export async function buscarUnidade(cdUnidade: number): Promise<Unidade> {
 /* ---------- Horário ---------- */
 
 /**
- * GET /unidades/{cdUnidade}/horarios — API Java
+ * GET /unidades/{idUnidade}/horarios — API Java
  * Lista os horários de uma UBS. Usada na tela "Horários" do celular e na agenda da Recepção.
+ * Enquanto a API não devolver flOcupado, os horários reais aparecem como livres e o 409 do agendamento avisa.
  * Erros esperados: 404 (unidade não existe).
  */
-export async function listarHorarios(cdUnidade: number): Promise<Horario[]> {
+export async function listarHorarios(idUnidade: number): Promise<Horario[]> {
   if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/unidades/${cdUnidade}/horarios`, "JAVA");
+    const resposta = await requisitar(`${API_URL}/unidades/${idUnidade}/horarios`, "JAVA");
     return resposta.json();
   }
-  return simular("GET", `/unidades/${cdUnidade}/horarios`, "JAVA", () => {
+  return simular("GET", `/unidades/${idUnidade}/horarios`, "JAVA", () => {
     const { unidades, horarios } = obterStore().obterEstado();
-    if (!unidades.some((u) => u.cdUnidade === cdUnidade)) falhar({ status: 404, erro: "Unidade não encontrada." });
-    return horarios.filter((h) => h.cdUnidade === cdUnidade);
+    if (!unidades.some((u) => u.idUnidade === idUnidade)) falhar({ status: 404, mensagem: "Unidade não encontrada" });
+    return horarios.filter((h) => h.idUnidade === idUnidade);
   });
 }
 
 /* ---------- Cidadão ---------- */
 
-/**
- * POST /cidadaos — API Java
- * Cadastra um cidadão sem senha. Usada no balcão da Recepção.
- * Erros esperados: 400 (dados inválidos), 409 (CNS já cadastrado).
- */
-export async function cadastrarCidadao(dados: CidadaoEntrada): Promise<Cidadao> {
-  if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify(dados) });
-    return resposta.json();
-  }
-  return simular("POST", "/cidadaos", "JAVA", () => cadastrarNoMock(dados), 201);
+/** Corpo do POST /cidadaos com CNS, CPF, CEP e telefones só com números. */
+function corpoCidadao(dados: CidadaoEntrada): CidadaoEntrada {
+  return {
+    ...dados,
+    nrCns: soNumeros(dados.nrCns),
+    nrCpf: dados.nrCpf ? soNumeros(dados.nrCpf) : null,
+    nrCelular: soNumeros(dados.nrCelular),
+    nrContatoRecado: soNumeros(dados.nrContatoRecado),
+    nrCep: soNumeros(dados.nrCep),
+  };
 }
 
-/** Grava um cidadão novo no mock (regra: o CNS é único). */
-function cadastrarNoMock(dados: CidadaoEntrada): Cidadao {
+/**
+ * POST /cidadaos — API Java (tpAcesso BALCAO, sem senha)
+ * Cadastra um cidadão no balcão da Recepção.
+ * Erros esperados: 400 (dados inválidos), 409 (CNS ou CPF já cadastrado).
+ */
+export async function cadastrarCidadao(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">): Promise<Cidadao> {
+  const corpo = corpoCidadao({ ...dados, tpAcesso: "BALCAO" });
+  if (API_URL) {
+    const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
+    return converterCidadao(await resposta.json());
+  }
+  return simular("POST", "/cidadaos", "JAVA", () => cadastrarNoMock(corpo), 201);
+}
+
+/** Grava um cidadão novo no mock (regra: o CNS é único → 409). A senha fica só nas credenciais do mock. */
+function cadastrarNoMock({ senha, ...dados }: CidadaoEntrada): Cidadao {
   const s = obterStore();
-  if (s.obterEstado().cidadaos.some((c) => c.nrCns === dados.nrCns)) falhar({ status: 409, erro: "Já existe cadastro com este Cartão SUS." });
-  const novo: Cidadao = { ...dados, cdCidadao: proximoCodigo(s.obterEstado().cidadaos.map((c) => c.cdCidadao)) };
-  s.atualizarEstado((e) => ({ ...e, cidadaos: [...e.cidadaos, novo] }));
+  if (s.obterEstado().cidadaos.some((c) => c.nrCns === dados.nrCns)) falhar({ status: 409, mensagem: "Já existe um cidadão com este CNS" });
+  const novo: Cidadao = { ...dados, idCidadao: proximoId(s.obterEstado().cidadaos.map((c) => c.idCidadao)) };
+  s.atualizarEstado((e) => ({
+    ...e,
+    cidadaos: [...e.cidadaos, novo],
+    credenciais: senha ? [...e.credenciais, { idCidadao: novo.idCidadao, dsSenha: senha }] : e.credenciais,
+  }));
   return novo;
 }
 
 /**
- * POST /cidadaos (com senha) — API Java
+ * POST /cidadaos — API Java (tpAcesso SENHA, com senha)
  * Cria a conta do cidadão no app. Usada na tela "Criar conta" do celular.
- * Regra RN21: quem foi cadastrado no balcão (sem senha) pode criar a conta com o mesmo Cartão SUS;
- * a conta completa esse cadastro e mantém as consultas já marcadas.
+ * Regra RN21: quem foi cadastrado no balcão (tpAcesso BALCAO, sem senha) pode criar a conta com o mesmo
+ * Cartão SUS; a conta completa esse cadastro e mantém as consultas já marcadas.
  * Erros esperados: 400 (senha curta ou dados inválidos), 409 (já existe conta com este CNS).
  */
-// TODO: conferir com a API Java se a senha vai no próprio POST /cidadaos (campo dsSenha).
-export async function criarConta(dados: CidadaoEntrada, dsSenha: string): Promise<Cidadao> {
+// TODO: a RN21 com a API real depende da API Java aceitar transformar um cadastro BALCAO em SENHA
+// (hoje o POST devolve 409 para qualquer CNS repetido). No modo demonstração ela já funciona.
+export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">, senha: string): Promise<Cidadao> {
+  const corpo = corpoCidadao({ ...dados, tpAcesso: "SENHA", senha });
   if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify({ ...dados, dsSenha }) });
-    return resposta.json();
+    const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
+    return converterCidadao(await resposta.json());
   }
   return simular("POST", "/cidadaos", "JAVA", () => {
-    if (dsSenha.length < 6) falhar({ status: 400, erro: "A senha precisa ter pelo menos 6 caracteres." });
+    if (senha.length < 6) falhar({ status: 400, mensagem: "A senha precisa ter pelo menos 6 caracteres" });
     const s = obterStore();
-    const { cidadaos, credenciais } = s.obterEstado();
-    const existente = cidadaos.find((c) => c.nrCns === dados.nrCns);
-    if (existente && credenciais.some((c) => c.cdCidadao === existente.cdCidadao)) {
-      falhar({ status: 409, erro: "Já existe conta com este Cartão SUS. Use Entrar." });
-    }
-    // RN21: cadastro do balcão sem senha → completa o cadastro (mesmo código, consultas mantidas).
-    const cidadao: Cidadao = existente ? { ...dados, cdCidadao: existente.cdCidadao } : cadastrarNoMock(dados);
+    const existente = s.obterEstado().cidadaos.find((c) => c.nrCns === corpo.nrCns);
+    if (!existente) return cadastrarNoMock(corpo);
+    if (existente.tpAcesso === "SENHA") falhar({ status: 409, mensagem: "Já existe conta com este Cartão SUS. Use Entrar." });
+    // RN21: cadastro do balcão → vira conta com senha (mesmo id, consultas mantidas).
+    const { senha: _senha, ...semSenha } = corpo;
+    void _senha;
+    const cidadao: Cidadao = { ...semSenha, idCidadao: existente.idCidadao };
     s.atualizarEstado((e) => ({
       ...e,
-      cidadaos: e.cidadaos.map((c) => (c.cdCidadao === cidadao.cdCidadao ? cidadao : c)),
-      credenciais: [...e.credenciais, { cdCidadao: cidadao.cdCidadao, dsSenha }],
+      cidadaos: e.cidadaos.map((c) => (c.idCidadao === cidadao.idCidadao ? cidadao : c)),
+      credenciais: [...e.credenciais, { idCidadao: cidadao.idCidadao, dsSenha: senha }],
     }));
     return cidadao;
   }, 201);
 }
 
 /**
+ * GET /cidadaos/{idCidadao} — API Java
+ * Busca o cadastro. Usada no Perfil do celular (dados atualizados depois do login).
+ * Erros esperados: 404 (cidadão não existe).
+ */
+export async function buscarCidadao(idCidadao: number): Promise<Cidadao> {
+  if (API_URL) {
+    const resposta = await requisitar(`${API_URL}/cidadaos/${idCidadao}`, "JAVA");
+    return converterCidadao(await resposta.json());
+  }
+  return simular("GET", `/cidadaos/${idCidadao}`, "JAVA", () => {
+    const cidadao = obterStore().obterEstado().cidadaos.find((c) => c.idCidadao === idCidadao);
+    if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
+    return cidadao;
+  });
+}
+
+/**
  * GET /cidadaos?cns={nrCns} — API Java
  * Busca o cidadão pelo Cartão SUS. Usada no balcão da Recepção.
- * @returns o cadastro, ou null quando a API responde 404 (não cadastrado)
+ * @returns o cadastro, ou null quando não existe (404)
  */
 export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null> {
-  const cns = nrCns.replace(/\D/g, "");
+  const cns = soNumeros(nrCns);
   try {
     if (API_URL) {
       const resposta = await requisitar(`${API_URL}/cidadaos?cns=${cns}`, "JAVA");
-      return await resposta.json();
+      const json = (await resposta.json()) as Cidadao | Cidadao[];
+      // Enquanto o filtro ?cns= não existir na API, ela devolve a lista inteira: o front procura o CNS nela.
+      const cidadao = Array.isArray(json) ? json.find((c) => c.nrCns === cns) : json;
+      return cidadao ? converterCidadao(cidadao) : null;
     }
     return await simular("GET", `/cidadaos?cns=${cns}`, "JAVA", () => {
       const cidadao = obterStore().obterEstado().cidadaos.find((c) => c.nrCns === cns);
-      if (!cidadao) falhar({ status: 404, erro: "Cidadão não cadastrado." });
+      if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
       return cidadao;
     });
   } catch (erro) {
@@ -183,64 +252,54 @@ export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null
   }
 }
 
-export interface OpcoesAtualizarCidadao {
-  /**
-   * Regra RF27 (perfil e agendamento no app): o cidadão só altera celular e contato de recado.
-   * CNS, nascimento, nome e sexo ficam como estão no cadastro, mesmo que cheguem valores diferentes.
-   * Sem a opção (balcão da recepção), o cadastro é atualizado por inteiro.
-   */
-  manterIdentificacao?: boolean;
-  /** Cadastro atual (obrigatório com a API real e manterIdentificacao, de onde vêm os 4 campos protegidos). */
-  cadastroAtual?: Cidadao;
-}
-
-/** Regra RF27: copia do cadastro atual os quatro campos de identificação. */
-function protegerIdentificacao(dados: CidadaoEntrada, atual: Cidadao): Cidadao {
-  return { ...dados, cdCidadao: atual.cdCidadao, nrCns: atual.nrCns, dtNascimento: atual.dtNascimento, nmCidadao: atual.nmCidadao, dsSexo: atual.dsSexo };
-}
-
 /**
- * PUT /cidadaos/{cdCidadao} — API Java
- * Atualiza o cadastro. Usada em "Editar perfil" (cidadão, com manterIdentificacao) e no balcão (recepção).
+ * PUT /cidadaos/{idCidadao} — API Java
+ * Atualiza o contato do cidadão. Usada em "Editar perfil" e no Agendar.
+ * Regra RF27: pelo app só mudam celular, contato de recado e CEP; Cartão SUS, nome, nascimento e sexo
+ * ficam como estão (o corpo nem leva esses campos).
  * Erros esperados: 400 (dados inválidos), 404 (cadastro não existe).
  */
-export async function atualizarCidadao(cdCidadao: number, dados: CidadaoEntrada, opcoes: OpcoesAtualizarCidadao = {}): Promise<Cidadao> {
+export async function atualizarCidadao(idCidadao: number, dados: CidadaoAtualizacao): Promise<Cidadao> {
+  const corpo: CidadaoAtualizacao = {
+    nrCelular: soNumeros(dados.nrCelular),
+    nmContatoRecado: dados.nmContatoRecado,
+    nrContatoRecado: soNumeros(dados.nrContatoRecado),
+    nrCep: soNumeros(dados.nrCep),
+  };
   if (API_URL) {
-    if (opcoes.manterIdentificacao && !opcoes.cadastroAtual) falhar({ status: 400, erro: "Cadastro atual não informado." });
-    const corpo = opcoes.manterIdentificacao && opcoes.cadastroAtual ? protegerIdentificacao(dados, opcoes.cadastroAtual) : { ...dados, cdCidadao };
-    const resposta = await requisitar(`${API_URL}/cidadaos/${cdCidadao}`, "JAVA", { method: "PUT", body: JSON.stringify(corpo) });
-    return resposta.json();
+    const resposta = await requisitar(`${API_URL}/cidadaos/${idCidadao}`, "JAVA", { method: "PUT", body: JSON.stringify(corpo) });
+    return converterCidadao(await resposta.json());
   }
-  return simular("PUT", `/cidadaos/${cdCidadao}`, "JAVA", () => {
+  return simular("PUT", `/cidadaos/${idCidadao}`, "JAVA", () => {
     const s = obterStore();
-    const atual = s.obterEstado().cidadaos.find((c) => c.cdCidadao === cdCidadao);
-    if (!atual) falhar({ status: 404, erro: "Cadastro não encontrado." });
-    const atualizado = opcoes.manterIdentificacao ? protegerIdentificacao(dados, atual) : { ...dados, cdCidadao };
-    s.atualizarEstado((e) => ({ ...e, cidadaos: e.cidadaos.map((c) => (c.cdCidadao === cdCidadao ? atualizado : c)) }));
+    const atual = s.obterEstado().cidadaos.find((c) => c.idCidadao === idCidadao);
+    if (!atual) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
+    const atualizado: Cidadao = { ...atual, ...corpo };
+    s.atualizarEstado((e) => ({ ...e, cidadaos: e.cidadaos.map((c) => (c.idCidadao === idCidadao ? atualizado : c)) }));
     return atualizado;
   });
 }
 
-/* ---------- Login ---------- */
-
 /**
- * POST /auth/entrar — API Java
+ * POST /cidadaos/login — API Java
  * Entra com Cartão SUS (15 números) e senha. Usada na tela "Entrar" do celular.
- * Se o endpoint não existir na API, fica em demonstração com a conta de exemplo (data/contaDemo.ts).
- * Erros esperados: 401 (CNS ou senha incorretos).
+ * Enquanto o endpoint não existir na API, fica em demonstração com a conta de exemplo (data/contaDemo.ts).
+ * Erros esperados: 401 (CNS ou senha incorretos, ou cadastro do balcão sem senha).
  */
-export async function entrar(nrCns: string, dsSenha: string): Promise<Cidadao> {
-  const cns = nrCns.replace(/\D/g, "");
+export async function entrar(nrCns: string, senha: string): Promise<Cidadao> {
+  const corpo: LoginEntrada = { nrCns: soNumeros(nrCns), senha };
   if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/auth/entrar`, "JAVA", { method: "POST", body: JSON.stringify({ nrCns: cns, dsSenha }) });
-    return resposta.json();
+    const resposta = await requisitar(`${API_URL}/cidadaos/login`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
+    return converterCidadao(await resposta.json());
   }
-  return simular("POST", "/auth/entrar", "JAVA", () => {
+  return simular("POST", "/cidadaos/login", "JAVA", () => {
     const { cidadaos, credenciais } = obterStore().obterEstado();
-    const cidadao = cidadaos.find((c) => c.nrCns === cns);
-    const credencial = cidadao && credenciais.find((c) => c.cdCidadao === cidadao.cdCidadao);
+    const cidadao = cidadaos.find((c) => c.nrCns === corpo.nrCns);
+    const credencial = cidadao && credenciais.find((c) => c.idCidadao === cidadao.idCidadao);
     // Mesma mensagem para CNS e senha errados: não revela quem tem conta.
-    if (!cidadao || !credencial || credencial.dsSenha !== dsSenha) falhar({ status: 401, erro: "Cartão SUS ou senha incorretos." });
+    if (!cidadao || cidadao.tpAcesso !== "SENHA" || !credencial || credencial.dsSenha !== senha) {
+      falhar({ status: 401, mensagem: "Cartão SUS ou senha incorretos." });
+    }
     return cidadao;
   });
 }
@@ -264,137 +323,146 @@ export async function listarConsultas(): Promise<Consulta[]> {
 export interface AgendamentoEntrada {
   horario: Horario;
   cidadao: Cidadao;
-  cdOrientacao: number | null;
+  idOrientacao: number | null;
   /** Oferta de vaga da lista do dia que está sendo aceita (só demonstração). */
-  cdOferta?: number;
+  idOferta?: number;
 }
 
 /**
  * POST /consultas — API Java (+ POST /prever-falta na API Flask)
  * Agenda uma consulta. Usada no "Agendar" do celular e no balcão da Recepção.
- * Antes de gravar, chama o Modelo 1 e grava vlProbFalta/dsRiscoFalta na consulta.
+ * Antes de gravar, chama o Modelo 1 e manda vlProbFalta/dsRiscoFalta no corpo.
  * Erros esperados: 400, 404 (horário ou cidadão não existe), 409 (horário acabou de ser ocupado).
  */
-// TODO: conferir com a API Java se vlProbFalta e dsRiscoFalta vão no corpo do POST /consultas.
 export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consulta> {
-  const { horario, cidadao, cdOrientacao } = dados;
+  const { horario, cidadao, idOrientacao } = dados;
   if (API_URL) {
     const consultas = await listarConsultas();
     const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, consultas, agora()));
-    const corpo = { cdHorario: horario.cdHorario, cdCidadao: cidadao.cdCidadao, cdOrientacao, ...previsao };
-    const resposta = await requisitar(`${API_URL}/consultas`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
-    return resposta.json();
+    const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
+    try {
+      const resposta = await requisitar(`${API_URL}/consultas`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
+      return await resposta.json();
+    } catch (erro) {
+      // 409: a tela mostra sempre o mesmo texto, qualquer que seja o da API.
+      if (erro instanceof ErroApi && erro.status === 409) throw new ErroApi(MENSAGEM_HORARIO_OCUPADO, 409);
+      throw erro;
+    }
   }
   return simular("POST", "/consultas", "JAVA", () => agendarNoMock(dados), 201);
 }
 
-/** Agenda no mock, com as mesmas validações planejadas para a API Java. */
-async function agendarNoMock({ horario: escolhido, cidadao: informado, cdOrientacao, cdOferta }: AgendamentoEntrada): Promise<Consulta> {
+/** Agenda no mock, com as mesmas validações da API Java (404 e 409). */
+async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrientacao, idOferta }: AgendamentoEntrada): Promise<Consulta> {
   const s = obterStore();
   const e = s.obterEstado();
-  const horario = e.horarios.find((h) => h.cdHorario === escolhido.cdHorario);
-  if (!horario) falhar({ status: 404, erro: "Horário não encontrado." });
-  if (horario.flOcupado) falhar({ status: 409, erro: "Este horário acabou de ser ocupado. Escolha outro." });
-  const cidadao = e.cidadaos.find((c) => c.cdCidadao === informado.cdCidadao);
-  if (!cidadao) falhar({ status: 404, erro: "Cadastro não encontrado." });
+  const horario = e.horarios.find((h) => h.idHorario === escolhido.idHorario);
+  if (!horario) falhar({ status: 404, mensagem: "Horário não encontrado" });
+  if (horario.flOcupado) falhar({ status: 409, mensagem: MENSAGEM_HORARIO_OCUPADO });
+  const cidadao = e.cidadaos.find((c) => c.idCidadao === informado.idCidadao);
+  if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
 
   const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, e.consultas, agora()));
-  let consulta: Consulta | null = null;
+  const unidade = e.unidades.find((u) => u.idUnidade === horario.idUnidade);
+  const nova: Consulta = {
+    idConsulta: 0, // definido abaixo, junto com a gravação
+    nmUnidade: unidade?.nmUnidade ?? "",
+    dtHorario: horario.dtHorario,
+    nmCidadao: cidadao.nmCidadao,
+    dsStatus: "AGENDADA",
+    idHorario: horario.idHorario,
+    idCidadao: cidadao.idCidadao,
+    idOrientacao,
+    dtAgendamento: agora().toISOString(),
+    dtConfirmacao: null,
+    dsCanalConfirmacao: null,
+    ...previsao,
+  };
   s.atualizarEstado((atual) => {
     // Confere de novo depois da previsão: outra pessoa pode ter pegado o horário nesse meio-tempo (409).
-    if (atual.horarios.some((h) => h.cdHorario === horario.cdHorario && h.flOcupado)) {
-      falhar({ status: 409, erro: "Este horário acabou de ser ocupado. Escolha outro." });
+    if (atual.horarios.some((h) => h.idHorario === horario.idHorario && h.flOcupado)) {
+      falhar({ status: 409, mensagem: MENSAGEM_HORARIO_OCUPADO });
     }
-    const oferta = atual.ofertas.find((o) => o.cdOferta === cdOferta && o.cdHorario === horario.cdHorario && o.status === "PENDENTE");
-    const entrada = atual.listaDoDia.find((x) => x.cdEntrada === oferta?.cdEntrada);
-    if (cdOferta && (!oferta || !entrada || entrada.cdCidadao !== cidadao.cdCidadao || segundosRestantesOferta(oferta, agora()) === 0)) {
-      falhar({ status: 409, erro: "Esta oferta venceu ou foi repassada. Confira seus avisos." });
+    const oferta = atual.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === horario.idHorario && o.status === "PENDENTE");
+    const entrada = atual.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
+    if (idOferta && (!oferta || !entrada || entrada.idCidadao !== cidadao.idCidadao || segundosRestantesOferta(oferta, agora()) === 0)) {
+      falhar({ status: 409, mensagem: "Esta oferta venceu ou foi repassada. Confira seus avisos." });
     }
-    consulta = {
-      cdConsulta: proximoCodigo(atual.consultas.map((c) => c.cdConsulta)),
-      cdHorario: horario.cdHorario,
-      cdCidadao: cidadao.cdCidadao,
-      cdOrientacao,
-      dtAgendamento: agora().toISOString(),
-      dtConfirmacao: null,
-      dsCanalConfirmacao: null,
-      dsStatus: "AGENDADA",
-      ...previsao,
-      nmUnidade: atual.unidades.find((u) => u.cdUnidade === horario.cdUnidade)?.nmUnidade ?? "",
-      dtHorario: horario.dtHorario,
-    };
+    nova.idConsulta = proximoId(atual.consultas.map((c) => c.idConsulta));
     return {
       ...atual,
-      horarios: atual.horarios.map((h) => (h.cdHorario === horario.cdHorario ? { ...h, flOcupado: true } : h)),
-      consultas: [...atual.consultas, consulta],
+      horarios: atual.horarios.map((h) => (h.idHorario === horario.idHorario ? { ...h, flOcupado: true } : h)),
+      consultas: [...atual.consultas, nova],
       // Aceitar a oferta tira a pessoa da lista do dia.
-      ofertas: atual.ofertas.map((o) => (o.cdOferta === cdOferta ? { ...o, status: "ACEITA" as const } : o)),
-      listaDoDia: atual.listaDoDia.map((x) => (x.cdEntrada === entrada?.cdEntrada ? { ...x, status: "ENCERRADA" as const } : x)),
+      ofertas: atual.ofertas.map((o) => (o.idOferta === idOferta ? { ...o, status: "ACEITA" as const } : o)),
+      listaDoDia: atual.listaDoDia.map((x) => (x.idEntrada === entrada?.idEntrada ? { ...x, status: "ENCERRADA" as const } : x)),
     };
   });
-  if (!consulta) falhar({ status: 500, erro: "Não foi possível agendar." });
-  return consulta;
+  return nova;
 }
 
-/** PUT /consultas/{cdConsulta} com a consulta inteira (usado por confirmar, cancelar e presença). */
-async function atualizarConsultaReal(nova: Consulta): Promise<Consulta> {
-  const resposta = await requisitar(`${API_URL}/consultas/${nova.cdConsulta}`, "JAVA", { method: "PUT", body: JSON.stringify(nova) });
+/**
+ * PUT /consultas/{idConsulta}/status — API Java
+ * Troca o status da consulta (usado por confirmar, cancelar e presença/falta).
+ * Erros esperados: 400 (status inválido), 404, 409.
+ */
+async function mudarStatusReal(idConsulta: number, corpo: StatusConsultaEntrada): Promise<Consulta> {
+  const resposta = await requisitar(`${API_URL}/consultas/${idConsulta}/status`, "JAVA", { method: "PUT", body: JSON.stringify(corpo) });
   return resposta.json();
 }
 
 /** Troca a consulta no mock, conferindo se ela existe (404). */
 function trocarConsultaNoMock(nova: Consulta): Consulta {
   const s = obterStore();
-  if (!s.obterEstado().consultas.some((c) => c.cdConsulta === nova.cdConsulta)) falhar({ status: 404, erro: "Consulta não encontrada." });
-  s.atualizarEstado((e) => ({ ...e, consultas: e.consultas.map((c) => (c.cdConsulta === nova.cdConsulta ? nova : c)) }));
+  if (!s.obterEstado().consultas.some((c) => c.idConsulta === nova.idConsulta)) falhar({ status: 404, mensagem: "Consulta não encontrada" });
+  s.atualizarEstado((e) => ({ ...e, consultas: e.consultas.map((c) => (c.idConsulta === nova.idConsulta ? nova : c)) }));
   return nova;
 }
 
 /**
- * PUT /consultas/{cdConsulta} — API Java (dsStatus CONFIRMADA)
+ * PUT /consultas/{idConsulta}/status — API Java (dsStatus CONFIRMADA)
  * Confirma a presença. Usada em Minhas consultas (APP) e em Pendentes da Recepção (TELEFONE ou PRESENCIAL).
+ * A API grava dtConfirmacao com a data e hora atuais.
  * Erros esperados: 404, 409.
  */
 export async function confirmarConsulta(consulta: Consulta, canal: CanalConfirmacao): Promise<Consulta> {
+  if (API_URL) return mudarStatusReal(consulta.idConsulta, { dsStatus: "CONFIRMADA", dsCanalConfirmacao: canal });
   const nova: Consulta = { ...consulta, dsStatus: "CONFIRMADA", dtConfirmacao: agora().toISOString(), dsCanalConfirmacao: canal };
-  if (API_URL) return atualizarConsultaReal(nova);
-  return simular("PUT", `/consultas/${consulta.cdConsulta}`, "JAVA", () => trocarConsultaNoMock(nova));
+  return simular("PUT", `/consultas/${consulta.idConsulta}/status`, "JAVA", () => trocarConsultaNoMock(nova));
 }
 
 /**
- * PUT /consultas/{cdConsulta} — API Java (dsStatus LIBERADA)
+ * PUT /consultas/{idConsulta}/status — API Java (dsStatus LIBERADA)
  * Cancela a consulta ("Não vou poder ir" no celular, ou pela recepção).
  * Regra: só cancela consulta agendada ou confirmada que ainda não aconteceu. No modo demonstração,
  * o horário liberado é oferecido à lista do dia (mesma regra do prazo de confirmação).
  * Erros esperados: 404, 409 (não pode mais cancelar).
  */
 export async function cancelarConsulta(consulta: Consulta): Promise<Consulta> {
-  const nova: Consulta = { ...consulta, dsStatus: "LIBERADA" };
-  if (API_URL) return atualizarConsultaReal(nova);
-  return simular("PUT", `/consultas/${consulta.cdConsulta}`, "JAVA", () => {
+  if (API_URL) return mudarStatusReal(consulta.idConsulta, { dsStatus: "LIBERADA" });
+  return simular("PUT", `/consultas/${consulta.idConsulta}/status`, "JAVA", () => {
     const s = obterStore();
-    const atual = s.obterEstado().consultas.find((c) => c.cdConsulta === consulta.cdConsulta);
-    if (!atual) falhar({ status: 404, erro: "Consulta não encontrada." });
-    if (!podeCancelar(atual, agora())) falhar({ status: 409, erro: "Esta consulta não pode mais ser cancelada." });
-    s.atualizarEstado((e) => liberarConsulta(e, consulta.cdConsulta, agora()).novoEstado);
-    return nova;
+    const atual = s.obterEstado().consultas.find((c) => c.idConsulta === consulta.idConsulta);
+    if (!atual) falhar({ status: 404, mensagem: "Consulta não encontrada" });
+    if (!podeCancelar(atual, agora())) falhar({ status: 409, mensagem: "Esta consulta não pode mais ser cancelada." });
+    s.atualizarEstado((e) => liberarConsulta(e, consulta.idConsulta, agora()).novoEstado);
+    return { ...atual, dsStatus: "LIBERADA" as const };
   });
 }
 
 /**
- * PUT /consultas/{cdConsulta} — API Java (dsStatus REALIZADA ou FALTA)
+ * PUT /consultas/{idConsulta}/status — API Java (dsStatus REALIZADA ou FALTA)
  * Registra presença ou falta na Agenda da Recepção.
  * Regra: presença só no dia da consulta; falta só depois do horário.
  * Erros esperados: 404, 409 (fora do momento permitido).
  */
 export async function registrarPresenca(consulta: Consulta, status: "REALIZADA" | "FALTA"): Promise<Consulta> {
-  const nova: Consulta = { ...consulta, dsStatus: status };
-  if (API_URL) return atualizarConsultaReal(nova);
-  return simular("PUT", `/consultas/${consulta.cdConsulta}`, "JAVA", () => {
+  if (API_URL) return mudarStatusReal(consulta.idConsulta, { dsStatus: status });
+  return simular("PUT", `/consultas/${consulta.idConsulta}/status`, "JAVA", () => {
     const pode = acoesPresenca(consulta, agora());
-    if (status === "REALIZADA" && !pode.presenca) falhar({ status: 409, erro: "A presença só pode ser registrada no dia da consulta." });
-    if (status === "FALTA" && !pode.falta) falhar({ status: 409, erro: "A falta só pode ser registrada depois do horário da consulta." });
-    return trocarConsultaNoMock(nova);
+    if (status === "REALIZADA" && !pode.presenca) falhar({ status: 409, mensagem: "A presença só pode ser registrada no dia da consulta." });
+    if (status === "FALTA" && !pode.falta) falhar({ status: 409, mensagem: "A falta só pode ser registrada depois do horário da consulta." });
+    return trocarConsultaNoMock({ ...consulta, dsStatus: status });
   });
 }
 
@@ -404,10 +472,10 @@ export async function registrarPresenca(consulta: Consulta, status: "REALIZADA" 
  * Salva a orientação feita no celular ou no balcão (o número dela é o código que a pessoa mostra na recepção).
  */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function salvarOrientacao(dados: Omit<Orientacao, "cdOrientacao" | "dtOrientacao">): Promise<Orientacao> {
+export async function salvarOrientacao(dados: Omit<Orientacao, "idOrientacao" | "dtOrientacao">): Promise<Orientacao> {
   return simular("POST", "orientação salva (só no front)", "FRONT", () => {
     const s = obterStore();
-    const nova: Orientacao = { ...dados, cdOrientacao: proximoCodigo(s.obterEstado().orientacoes.map((o) => o.cdOrientacao)), dtOrientacao: agora().toISOString() };
+    const nova: Orientacao = { ...dados, idOrientacao: proximoId(s.obterEstado().orientacoes.map((o) => o.idOrientacao)), dtOrientacao: agora().toISOString() };
     s.atualizarEstado((e) => ({ ...e, orientacoes: [...e.orientacoes, nova] }));
     return nova;
   }, 201);
@@ -415,24 +483,24 @@ export async function salvarOrientacao(dados: Omit<Orientacao, "cdOrientacao" | 
 
 /** Busca a orientação pelo código digitado no balcão. Erro 404 se o código não existir. */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function buscarOrientacao(cdOrientacao: number): Promise<Orientacao> {
-  return simular("GET", `orientação ${cdOrientacao} (só no front)`, "FRONT", () => {
-    const o = obterStore().obterEstado().orientacoes.find((x) => x.cdOrientacao === cdOrientacao);
-    if (!o) falhar({ status: 404, erro: "Código não encontrado. Confira o número com o cidadão." });
+export async function buscarOrientacao(idOrientacao: number): Promise<Orientacao> {
+  return simular("GET", `orientação ${idOrientacao} (só no front)`, "FRONT", () => {
+    const o = obterStore().obterEstado().orientacoes.find((x) => x.idOrientacao === idOrientacao);
+    if (!o) falhar({ status: 404, mensagem: "Código não encontrado. Confira o número com o cidadão." });
     return o;
   });
 }
 
 /** Vincula ao cidadão a orientação feita sem login (balcão). Erro 409 se o código já for de outra pessoa. */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function vincularOrientacao(cdOrientacao: number, cdCidadao: number): Promise<Orientacao> {
-  return simular("PUT", `orientação ${cdOrientacao} (só no front)`, "FRONT", () => {
+export async function vincularOrientacao(idOrientacao: number, idCidadao: number): Promise<Orientacao> {
+  return simular("PUT", `orientação ${idOrientacao} (só no front)`, "FRONT", () => {
     const s = obterStore();
-    const o = s.obterEstado().orientacoes.find((x) => x.cdOrientacao === cdOrientacao);
-    if (!o) falhar({ status: 404, erro: "Código não encontrado." });
-    if (!podeVincular(o, cdCidadao)) falhar({ status: 409, erro: "Código já utilizado." });
-    const nova: Orientacao = { ...o, cdCidadao };
-    s.atualizarEstado((e) => ({ ...e, orientacoes: e.orientacoes.map((x) => (x.cdOrientacao === cdOrientacao ? nova : x)) }));
+    const o = s.obterEstado().orientacoes.find((x) => x.idOrientacao === idOrientacao);
+    if (!o) falhar({ status: 404, mensagem: "Código não encontrado." });
+    if (!podeVincular(o, idCidadao)) falhar({ status: 409, mensagem: "Código já utilizado." });
+    const nova: Orientacao = { ...o, idCidadao };
+    s.atualizarEstado((e) => ({ ...e, orientacoes: e.orientacoes.map((x) => (x.idOrientacao === idOrientacao ? nova : x)) }));
     return nova;
   });
 }
@@ -442,17 +510,17 @@ export async function vincularOrientacao(cdOrientacao: number, cdCidadao: number
  * Regras: só em dia útil; a mesma pessoa não entra duas vezes.
  */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function incluirNaListaDoDia(dados: { cdUnidade: number; cdCidadao: number; cdOrientacao: number; dsCor: EntradaListaDoDia["dsCor"] }): Promise<EntradaListaDoDia> {
+export async function incluirNaListaDoDia(dados: { idUnidade: number; idCidadao: number; idOrientacao: number; dsCor: EntradaListaDoDia["dsCor"] }): Promise<EntradaListaDoDia> {
   return simular("POST", "lista do dia (só no front)", "FRONT", () => {
     const s = obterStore();
     const e = s.obterEstado();
-    const cidadao = e.cidadaos.find((c) => c.cdCidadao === dados.cdCidadao);
-    if (!cidadao) falhar({ status: 404, erro: "Cadastro não encontrado." });
-    if (!listaDoDiaAberta(agora())) falhar({ status: 409, erro: MENSAGEM_LISTA_SO_DIA_UTIL });
-    if (e.listaDoDia.some((x) => x.cdCidadao === dados.cdCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, erro: "Este cidadão já está na lista do dia." });
+    const cidadao = e.cidadaos.find((c) => c.idCidadao === dados.idCidadao);
+    if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
+    if (!listaDoDiaAberta(agora())) falhar({ status: 409, mensagem: MENSAGEM_LISTA_SO_DIA_UTIL });
+    if (e.listaDoDia.some((x) => x.idCidadao === dados.idCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, mensagem: "Este cidadão já está na lista do dia." });
     const entrada: EntradaListaDoDia = {
-      cdEntrada: proximoCodigo(e.listaDoDia.map((x) => x.cdEntrada)),
-      cdCidadao: dados.cdCidadao, cdOrientacao: dados.cdOrientacao, cdUnidade: dados.cdUnidade,
+      idEntrada: proximoId(e.listaDoDia.map((x) => x.idEntrada)),
+      idCidadao: dados.idCidadao, idOrientacao: dados.idOrientacao, idUnidade: dados.idUnidade,
       nmCidadao: cidadao.nmCidadao, dsCor: dados.dsCor, dtEntrada: agora().toISOString(),
       flPrioridade: false, flCidadao: false, status: "AGUARDANDO",
     };
@@ -466,23 +534,23 @@ export async function incluirNaListaDoDia(dados: { cdUnidade: number; cdCidadao:
  * Regra: a oferta precisa estar pendente e dentro do prazo de 30 min.
  */
 // DEMONSTRAÇÃO: não existe na API Java (o agendamento em si usa POST /consultas)
-export async function aceitarOfertaPorTelefone(cdOferta: number): Promise<Consulta> {
+export async function aceitarOfertaPorTelefone(idOferta: number): Promise<Consulta> {
   const e = obterStore().obterEstado();
-  const oferta = e.ofertas.find((o) => o.cdOferta === cdOferta && o.status === "PENDENTE");
-  const entrada = e.listaDoDia.find((x) => x.cdEntrada === oferta?.cdEntrada);
-  const horario = e.horarios.find((h) => h.cdHorario === oferta?.cdHorario);
-  const cidadao = e.cidadaos.find((c) => c.cdCidadao === entrada?.cdCidadao);
+  const oferta = e.ofertas.find((o) => o.idOferta === idOferta && o.status === "PENDENTE");
+  const entrada = e.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
+  const horario = e.horarios.find((h) => h.idHorario === oferta?.idHorario);
+  const cidadao = e.cidadaos.find((c) => c.idCidadao === entrada?.idCidadao);
   if (!oferta || segundosRestantesOferta(oferta, agora()) === 0 || !entrada || !horario || !cidadao) {
-    falhar({ status: 409, erro: "Oferta indisponível." });
+    falhar({ status: 409, mensagem: "Oferta indisponível." });
   }
-  return agendarConsulta({ horario, cidadao, cdOrientacao: entrada.cdOrientacao, cdOferta });
+  return agendarConsulta({ horario, cidadao, idOrientacao: entrada.idOrientacao, idOferta });
 }
 
 /** Ficha de saúde do cidadão (null se não tiver). Prévia – integração com o Meu SUS prevista. */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function buscarFicha(cdCidadao: number): Promise<FichaSaude | null> {
+export async function buscarFicha(idCidadao: number): Promise<FichaSaude | null> {
   return simular("GET", "ficha de saúde (só no front)", "FRONT", () =>
-    obterStore().obterEstado().fichas.find((f) => f.cdCidadao === cdCidadao) ?? null);
+    obterStore().obterEstado().fichas.find((f) => f.idCidadao === idCidadao) ?? null);
 }
 
 /**
@@ -491,17 +559,17 @@ export async function buscarFicha(cdCidadao: number): Promise<FichaSaude | null>
 // DEMONSTRAÇÃO: não existe na API Java
 export async function salvarFicha(ficha: Omit<FichaSaude, "dtAtualizacao">): Promise<FichaSaude> {
   return simular("PUT", "ficha de saúde (só no front)", "FRONT", () => {
-    if (!ficha.flConsentimento) falhar({ status: 400, erro: "Marque a autorização (LGPD) para salvar a ficha." });
+    if (!ficha.flConsentimento) falhar({ status: 400, mensagem: "Marque a autorização (LGPD) para salvar a ficha." });
     const nova: FichaSaude = { ...ficha, dtAtualizacao: agora().toISOString() };
-    obterStore().atualizarEstado((e) => ({ ...e, fichas: [...e.fichas.filter((f) => f.cdCidadao !== ficha.cdCidadao), nova] }));
+    obterStore().atualizarEstado((e) => ({ ...e, fichas: [...e.fichas.filter((f) => f.idCidadao !== ficha.idCidadao), nova] }));
     return nova;
   });
 }
 
 /** Apaga a ficha de saúde (direito de exclusão da LGPD). */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function apagarFicha(cdCidadao: number): Promise<void> {
+export async function apagarFicha(idCidadao: number): Promise<void> {
   return simular("DELETE", "ficha de saúde (só no front)", "FRONT", () => {
-    obterStore().atualizarEstado((e) => ({ ...e, fichas: e.fichas.filter((f) => f.cdCidadao !== cdCidadao) }));
+    obterStore().atualizarEstado((e) => ({ ...e, fichas: e.fichas.filter((f) => f.idCidadao !== idCidadao) }));
   });
 }

@@ -3,7 +3,7 @@ const MENSAGEM_SEM_CONEXAO = 'Não foi possível conectar ao Acolhe+. Verifique 
 
 /**
  * Transforma qualquer erro numa mensagem para mostrar na tela.
- * Erros da API já chegam com o texto do ErroResponse; falha de rede (TypeError do fetch) vira a mensagem de conexão.
+ * Erros da API já chegam com o texto do ErroDTO (campo mensagem); falha de rede (TypeError do fetch) vira a mensagem de conexão.
  */
 export const mensagemDoErro = (err: unknown) =>
   err instanceof Error && !(err instanceof TypeError) ? err.message : MENSAGEM_SEM_CONEXAO;
