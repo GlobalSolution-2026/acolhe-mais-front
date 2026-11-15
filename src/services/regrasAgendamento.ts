@@ -15,7 +15,7 @@ import {
   LIMIAR_RISCO_ALTO,
 } from "../data/configuracoes";
 import { chaveDia, isDiaUtil, subtrairDiasUteis } from "../lib/datas";
-import type { Cidadao, Consulta, EntradaListaDoDia, OfertaVaga, Horario } from "../types";
+import type { Cidadao, Consulta, EntradaListaDoDia, OfertaVaga, Horario, RiscoFalta } from "../types";
 import type { Orientacao } from "../types/orientacao";
 
 /** Contato válido: celular ou telefone de recado preenchido. */
@@ -24,7 +24,7 @@ export function temContatoValido(c: Pick<Cidadao, "nrCelular" | "nrContatoRecado
 }
 
 /** Risco de falta pela pontuação do modelo: ALTO quando vlProbFalta >= LIMIAR_RISCO_ALTO. */
-export function classificarRiscoFalta(vlProbFalta: number): Consulta["dsRiscoFalta"] {
+export function classificarRiscoFalta(vlProbFalta: number): RiscoFalta {
   return vlProbFalta >= LIMIAR_RISCO_ALTO ? "ALTO" : "BAIXO";
 }
 
@@ -35,6 +35,8 @@ function prazoFinal(dtHorario: string): Date {
 
 /** Consultas marcadas depois do prazo final (menos de 1 dia útil de antecedência) dispensam confirmação. */
 export function dispensadaConfirmacao(c: Pick<Consulta, "dtAgendamento" | "dtHorario">): boolean {
+  // Sem a data do agendamento (a API Java ainda não devolve), a consulta segue a regra normal de confirmação.
+  if (!c.dtAgendamento) return false;
   return new Date(c.dtAgendamento) > prazoFinal(c.dtHorario);
 }
 
@@ -89,8 +91,8 @@ export function ordenarListaDoDia(entradas: EntradaListaDoDia[]): EntradaListaDo
 }
 
 /** Posição (1-based) de uma entrada na fila; 0 se não estiver aguardando. */
-export function posicaoNaFila(entradas: EntradaListaDoDia[], cdEntrada: number): number {
-  const i = ordenarListaDoDia(entradas).findIndex((e) => e.cdEntrada === cdEntrada);
+export function posicaoNaFila(entradas: EntradaListaDoDia[], idEntrada: number): number {
+  const i = ordenarListaDoDia(entradas).findIndex((e) => e.idEntrada === idEntrada);
   return i < 0 ? 0 : i + 1;
 }
 
@@ -119,55 +121,55 @@ export function calcularIndicadores(consultas: Consulta[], listaDoDia: EntradaLi
   const reocupadas = liberadas.filter((l) =>
     consultas.some(
       (o) =>
-        o.cdConsulta !== l.cdConsulta &&
-        o.cdHorario === l.cdHorario &&
+        o.idConsulta !== l.idConsulta &&
+        o.idHorario === l.idHorario &&
         o.dsStatus !== "LIBERADA" &&
-        new Date(o.dtAgendamento).getTime() > new Date(l.dtAgendamento).getTime(),
+        new Date(o.dtAgendamento ?? 0).getTime() > new Date(l.dtAgendamento ?? 0).getTime(),
     ),
   );
   const taxaReaproveitamento = liberadas.length > 0 ? reocupadas.length / liberadas.length : null;
 
-  const comOrientacao = encerradas.filter((c) => c.cdOrientacao !== null);
+  const comOrientacao = encerradas.filter((c) => c.idOrientacao !== null);
   const realizadas = comOrientacao.filter((c) => c.dsStatus === "REALIZADA");
   const comparecimentoAposOrientacao = comOrientacao.length > 0 ? realizadas.length / comOrientacao.length : null;
 
   // Quem já tem consulta hoje será atendido: não conta como não encaixado.
   const hoje = chaveDia(agora.toISOString());
-  const naoEncaixadas = ordenarListaDoDia(listaDoDia).filter((e) => !consultaNoDia(consultas, e.cdCidadao, hoje)).length;
+  const naoEncaixadas = ordenarListaDoDia(listaDoDia).filter((e) => !consultaNoDia(consultas, e.idCidadao, hoje)).length;
   return { taxaAbsenteismo, taxaReaproveitamento, naoEncaixadas, comparecimentoAposOrientacao };
 }
 
 /** Consulta ativa (agendada ou confirmada) da pessoa no dia "aaaa-mm-dd"; a mais cedo, se houver mais de uma. */
-export function consultaNoDia(consultas: Consulta[], cdCidadao: number | null, dia: string): Consulta | undefined {
-  if (cdCidadao === null) return undefined;
+export function consultaNoDia(consultas: Consulta[], idCidadao: number | null, dia: string): Consulta | undefined {
+  if (idCidadao === null) return undefined;
   return consultas
-    .filter((c) => c.cdCidadao === cdCidadao && (c.dsStatus === "AGENDADA" || c.dsStatus === "CONFIRMADA") && chaveDia(c.dtHorario) === dia)
+    .filter((c) => c.idCidadao === idCidadao && (c.dsStatus === "AGENDADA" || c.dsStatus === "CONFIRMADA") && chaveDia(c.dtHorario) === dia)
     .sort((a, b) => a.dtHorario.localeCompare(b.dtHorario))[0];
 }
 
 /** Orientações do dia da pessoa (vinculadas pelo Balcão/app ou pela lista do dia), da mais recente para a mais antiga. */
-export function orientacoesDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], cdCidadao: number | null, dia: string): Orientacao[] {
-  if (cdCidadao === null) return [];
-  const daLista = new Set(listaDoDia.filter((e) => e.cdCidadao === cdCidadao).map((e) => e.cdOrientacao));
+export function orientacoesDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], idCidadao: number | null, dia: string): Orientacao[] {
+  if (idCidadao === null) return [];
+  const daLista = new Set(listaDoDia.filter((e) => e.idCidadao === idCidadao).map((e) => e.idOrientacao));
   return orientacoes
-    .filter((o) => (o.cdCidadao === cdCidadao || daLista.has(o.cdOrientacao)) && chaveDia(o.dtOrientacao) === dia)
+    .filter((o) => (o.idCidadao === idCidadao || daLista.has(o.idOrientacao)) && chaveDia(o.dtOrientacao) === dia)
     .sort((a, b) => b.dtOrientacao.localeCompare(a.dtOrientacao));
 }
 
 /** A orientação mais recente do dia (selo da Agenda). */
-export function orientacaoDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], cdCidadao: number | null, dia: string): Orientacao | undefined {
-  return orientacoesDoDia(orientacoes, listaDoDia, cdCidadao, dia)[0];
+export function orientacaoDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], idCidadao: number | null, dia: string): Orientacao | undefined {
+  return orientacoesDoDia(orientacoes, listaDoDia, idCidadao, dia)[0];
 }
 
 /** Não repetir destinatários, não devolver a quem perdeu e pular quem já tem consulta no dia da vaga. */
-export function escolherDestinatarioOferta(fila: EntradaListaDoDia[], ofertas: OfertaVaga[], horario: Pick<Horario, "cdHorario" | "dtHorario">,
-  cdCidadaoQuePerdeu: number | null, consultas: Consulta[]): EntradaListaDoDia | undefined {
+export function escolherDestinatarioOferta(fila: EntradaListaDoDia[], ofertas: OfertaVaga[], horario: Pick<Horario, "idHorario" | "dtHorario">,
+  idCidadaoQuePerdeu: number | null, consultas: Consulta[]): EntradaListaDoDia | undefined {
   const dia = chaveDia(horario.dtHorario);
   return ordenarListaDoDia(fila).find((e) =>
-    (cdCidadaoQuePerdeu === null || e.cdCidadao !== cdCidadaoQuePerdeu) &&
-    !consultaNoDia(consultas, e.cdCidadao, dia) &&
-    !ofertas.some((o) => o.cdEntrada === e.cdEntrada && (o.status === "PENDENTE" ||
-      (o.cdHorario === horario.cdHorario && (o.status === "RECUSADA" || o.status === "EXPIRADA")))));
+    (idCidadaoQuePerdeu === null || e.idCidadao !== idCidadaoQuePerdeu) &&
+    !consultaNoDia(consultas, e.idCidadao, dia) &&
+    !ofertas.some((o) => o.idEntrada === e.idEntrada && (o.status === "PENDENTE" ||
+      (o.idHorario === horario.idHorario && (o.status === "RECUSADA" || o.status === "EXPIRADA")))));
 }
 
 /** A lista do dia só funciona em dia útil. */
@@ -184,7 +186,7 @@ export function listaDoDiaAberta(agora: Date): boolean {
 export function horarioOferecivel(h: Horario, ofertas: OfertaVaga[], agora: Date): boolean {
   return !h.flOcupado && listaDoDiaAberta(agora) && chaveDia(h.dtHorario) === chaveDia(agora.toISOString()) &&
     new Date(h.dtHorario).getTime() >= agora.getTime() + ANTECEDENCIA_MINIMA_LISTA_DIA_MIN * 60_000 &&
-    !ofertas.some((o) => o.cdHorario === h.cdHorario && o.status === "PENDENTE");
+    !ofertas.some((o) => o.idHorario === h.idHorario && o.status === "PENDENTE");
 }
 
 /**
@@ -205,25 +207,25 @@ export function tempoRestanteOferta(oferta: OfertaVaga, agora: Date): string {
 }
 
 /** Entrada do app que pertence a quem está usando agora (null = sem login, só a entrada feita sem login). */
-const ehDoCidadao = (e: EntradaListaDoDia, cdCidadaoAtual: number | null) => e.flCidadao && e.cdCidadao === cdCidadaoAtual;
+const ehDoCidadao = (e: EntradaListaDoDia, idCidadaoAtual: number | null) => e.flCidadao && e.idCidadao === idCidadaoAtual;
 
 /** Entrada AGUARDANDO do cidadão atual na lista do dia; nunca a de outra conta que usou o app antes. */
-export function entradaDoCidadao(fila: EntradaListaDoDia[], cdCidadaoAtual: number | null): EntradaListaDoDia | undefined {
-  return fila.find((e) => ehDoCidadao(e, cdCidadaoAtual) && e.status === "AGUARDANDO");
+export function entradaDoCidadao(fila: EntradaListaDoDia[], idCidadaoAtual: number | null): EntradaListaDoDia | undefined {
+  return fila.find((e) => ehDoCidadao(e, idCidadaoAtual) && e.status === "AGUARDANDO");
 }
 
 /**
  * Ao entrar (login ou conta nova), vincula à conta só a entrada feita sem login antes dele.
  * Entradas de outras contas continuam delas; se a conta já está na lista, nada muda.
  */
-export function vincularEntradaSemLogin(fila: EntradaListaDoDia[], cdCidadao: number, nmCidadao: string | undefined): EntradaListaDoDia[] {
-  if (entradaDoCidadao(fila, cdCidadao)) return fila;
-  return fila.map((x) => (x.flCidadao && x.cdCidadao === null ? { ...x, cdCidadao, nmCidadao: nmCidadao ?? x.nmCidadao } : x));
+export function vincularEntradaSemLogin(fila: EntradaListaDoDia[], idCidadao: number, nmCidadao: string | undefined): EntradaListaDoDia[] {
+  if (entradaDoCidadao(fila, idCidadao)) return fila;
+  return fila.map((x) => (x.flCidadao && x.idCidadao === null ? { ...x, idCidadao, nmCidadao: nmCidadao ?? x.nmCidadao } : x));
 }
 
 /** Ofertas de vaga pendentes do cidadão logado (busca pela conta, nunca de outra pessoa que usou o app). */
-export function ofertasDoCidadao(ofertas: OfertaVaga[], fila: EntradaListaDoDia[], cdCidadaoAtual: number | null): OfertaVaga[] {
-  return ofertas.filter((o) => o.status === "PENDENTE" && fila.some((e) => e.cdEntrada === o.cdEntrada && ehDoCidadao(e, cdCidadaoAtual)));
+export function ofertasDoCidadao(ofertas: OfertaVaga[], fila: EntradaListaDoDia[], idCidadaoAtual: number | null): OfertaVaga[] {
+  return ofertas.filter((o) => o.status === "PENDENTE" && fila.some((e) => e.idEntrada === o.idEntrada && ehDoCidadao(e, idCidadaoAtual)));
 }
 
 /** AGENDADA com prazo de confirmação vencido, sem contato válido e que ainda não aconteceu: não é liberada e segue pendente. */
@@ -237,10 +239,10 @@ export function prazoVencidoSemContato(c: Consulta, cidadao: Pick<Cidadao, "nrCe
  * Fonte única da lista e do contador de confirmações da recepção.
  * Inclui as de prazo vencido sem contato (primeiro, da consulta mais próxima); depois risco ALTO e prazo mais próximo.
  */
-export function listarPendentesConfirmacao(consultas: Consulta[], horarios: Horario[], cidadaos: Cidadao[], cdUnidade: number, agora: Date): Consulta[] {
-  const ids = new Set(horarios.filter((h) => h.cdUnidade === cdUnidade).map((h) => h.cdHorario));
-  const vencida = (c: Consulta) => prazoVencidoSemContato(c, cidadaos.find((p) => p.cdCidadao === c.cdCidadao), agora);
-  return consultas.filter((c) => ids.has(c.cdHorario) && (precisaConfirmar(c, agora) || vencida(c))).sort((a, b) =>
+export function listarPendentesConfirmacao(consultas: Consulta[], horarios: Horario[], cidadaos: Cidadao[], idUnidade: number, agora: Date): Consulta[] {
+  const ids = new Set(horarios.filter((h) => h.idUnidade === idUnidade).map((h) => h.idHorario));
+  const vencida = (c: Consulta) => prazoVencidoSemContato(c, cidadaos.find((p) => p.idCidadao === c.idCidadao), agora);
+  return consultas.filter((c) => c.idHorario !== undefined && ids.has(c.idHorario) && (precisaConfirmar(c, agora) || vencida(c))).sort((a, b) =>
     Number(vencida(b)) - Number(vencida(a)) ||
     (vencida(a) && vencida(b) ? a.dtHorario.localeCompare(b.dtHorario) : 0) ||
     Number(b.dsRiscoFalta === "ALTO") - Number(a.dsRiscoFalta === "ALTO") ||

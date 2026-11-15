@@ -13,11 +13,11 @@ import type { BlocoPergunta, CondicaoExibicao, Cor, Opcao, Pergunta, TipoRespost
 let cd = 0;
 /**
  * Atalho para montar uma pergunta (deixa a lista abaixo mais curta de ler).
- * @param cdQueixa queixa da pergunta (null = comum a todas, como o perfil)
+ * @param idQueixa queixa da pergunta (null = comum a todas, como o perfil)
  * @param extra cor se a resposta for de alarme, opções, condição para aparecer e texto do sinal
  */
 function q(
-  cdQueixa: number | null,
+  idQueixa: number | null,
   codigo: string,
   nrOrdem: number,
   bloco: BlocoPergunta,
@@ -26,8 +26,8 @@ function q(
   extra: { cor?: Cor; opcoes?: Opcao[]; cond?: CondicaoExibicao; sinal?: string; alarme?: "SIM" | "NAO" } = {},
 ): Pergunta {
   return {
-    cdPergunta: ++cd,
-    cdQueixa,
+    idPergunta: ++cd,
+    idQueixa,
     codigo,
     dsPergunta,
     nrOrdem,

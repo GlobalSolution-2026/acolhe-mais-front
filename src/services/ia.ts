@@ -109,7 +109,7 @@ export function montarEntradaPrevisao(horario: Horario, cidadao: Cidadao, consul
     // Limitação desta versão: o lembrete ainda não foi enviado no momento do agendamento.
     smsRecebido: false,
     faltasAnteriores: consultas.filter((c) =>
-      c.cdCidadao === cidadao.cdCidadao && c.dsStatus === "FALTA" && new Date(c.dtHorario).getTime() < agora.getTime()).length,
+      c.idCidadao === cidadao.idCidadao && c.dsStatus === "FALTA" && new Date(c.dtHorario).getTime() < agora.getTime()).length,
   };
 }
 

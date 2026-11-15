@@ -59,8 +59,8 @@ function precisaInstabilidade(queixa: CodigoQueixa, r: Respostas): boolean {
 
 /** Busca a pergunta comum ou a da queixa (a INST tem uma versão por queixa). */
 function perguntaDaQueixa(codigo: string, queixa: CodigoQueixa): Pergunta | undefined {
-  const cd = obterQueixa(queixa).cdQueixa;
-  return perguntas.find((x) => x.codigo === codigo && (x.cdQueixa === null || x.cdQueixa === cd));
+  const cd = obterQueixa(queixa).idQueixa;
+  return perguntas.find((x) => x.codigo === codigo && (x.idQueixa === null || x.idQueixa === cd));
 }
 
 /** Texto curto do sinal de uma pergunta, para a lista "Sinais marcados" do resultado. */
@@ -182,10 +182,10 @@ function condicaoAtendida(c: CondicaoExibicao | undefined, r: Respostas): boolea
 
 /** Perguntas comuns + as da queixa, na ordem em que devem ser feitas. */
 export function perguntasDaQueixa(queixa: CodigoQueixa): Pergunta[] {
-  const cd = obterQueixa(queixa).cdQueixa;
+  const cd = obterQueixa(queixa).idQueixa;
   const ordem = { PERFIL: 0, ENTRADA: 1, ALARME: 2, LARANJA: 3, URGENCIA: 5, CLASSIFICACAO: 6 };
   const prioridade = (p: Pergunta) => p.codigo === "INST" ? 4 : ordem[p.bloco];
-  return perguntas.filter((p) => p.cdQueixa === null || p.cdQueixa === cd)
+  return perguntas.filter((p) => p.idQueixa === null || p.idQueixa === cd)
     .sort((a, b) => prioridade(a) - prioridade(b) || a.nrOrdem - b.nrOrdem);
 }
 
@@ -249,8 +249,8 @@ export function textoPergunta(p: Pergunta, r: Respostas): string {
 const CODIGOS_PERFIL = ["PF1", "PF2", "SX", "PF3", "DOR"];
 
 /** Começa um questionário vazio para a queixa e o CEP escolhidos. */
-export function iniciarQuestionario(cdQueixa: CodigoQueixa, nrCep: string, local: LocalOrientacao = {}): OrientacaoEmAndamento {
-  return { cdQueixa, nrCep, ...local, respostas: {}, ordem: [], resultado: null };
+export function iniciarQuestionario(codigoQueixa: CodigoQueixa, nrCep: string, local: LocalOrientacao = {}): OrientacaoEmAndamento {
+  return { codigoQueixa, nrCep, ...local, respostas: {}, ordem: [], resultado: null };
 }
 
 /** Grava a resposta; a ordem guarda cada pergunta uma vez só (para o "Pergunta anterior"). */
@@ -272,7 +272,7 @@ export function voltarNoQuestionario(o: OrientacaoEmAndamento): OrientacaoEmAnda
 }
 
 /** Troca a queixa mantendo só as respostas do perfil (PF1, PF2, SX, PF3, DOR). */
-export function trocarQueixaNoQuestionario(o: OrientacaoEmAndamento, cdQueixa: CodigoQueixa): OrientacaoEmAndamento {
+export function trocarQueixaNoQuestionario(o: OrientacaoEmAndamento, codigoQueixa: CodigoQueixa): OrientacaoEmAndamento {
   const respostas = Object.fromEntries(Object.entries(o.respostas).filter(([k]) => CODIGOS_PERFIL.includes(k)));
-  return { ...o, cdQueixa, respostas, ordem: o.ordem.filter((c) => CODIGOS_PERFIL.includes(c)), resultado: null };
+  return { ...o, codigoQueixa, respostas, ordem: o.ordem.filter((c) => CODIGOS_PERFIL.includes(c)), resultado: null };
 }

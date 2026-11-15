@@ -1,13 +1,13 @@
 /**
  * Conta de exemplo do modo demonstração (Cartão SUS + senha) e ficha de saúde dela.
- * Usada quando POST /auth/entrar ainda não existe na API Java.
+ * Usada enquanto POST /cidadaos/login ainda não existe na API Java.
  */
 import type { CodigoDoencaBase, CredencialCidadao, FichaSaude } from "../types";
 
 /** DEMONSTRAÇÃO: conta de exemplo exibida no Modo demonstração. */
-export const CONTA_DEMO = { cdCidadao: 1, nrCns: "111222233334444", dsSenha: "acolhe123" } as const;
+export const CONTA_DEMO = { idCidadao: 1, nrCns: "111222233334444", dsSenha: "acolhe123" } as const;
 
-export const credenciaisIniciais: CredencialCidadao[] = [{ cdCidadao: CONTA_DEMO.cdCidadao, dsSenha: CONTA_DEMO.dsSenha }];
+export const credenciaisIniciais: CredencialCidadao[] = [{ idCidadao: CONTA_DEMO.idCidadao, dsSenha: CONTA_DEMO.dsSenha }];
 
 export const DOENCAS_BASE: { cd: CodigoDoencaBase; nm: string }[] = [
   { cd: "DIABETES", nm: "Diabetes" },
@@ -25,7 +25,7 @@ export const DOENCAS_BASE: { cd: CodigoDoencaBase; nm: string }[] = [
  */
 export function fichasIniciais(agora: Date): FichaSaude[] {
   return [{
-    cdCidadao: CONTA_DEMO.cdCidadao,
+    idCidadao: CONTA_DEMO.idCidadao,
     dsDoencasBase: ["HIPERTENSAO", "DIABETES"],
     dsOutraDoenca: "",
     medicamentos: [{ nmMedicamento: "Losartana", dsDose: "50 mg, 1 vez ao dia" }, { nmMedicamento: "Metformina", dsDose: "850 mg, 2 vezes ao dia" }],

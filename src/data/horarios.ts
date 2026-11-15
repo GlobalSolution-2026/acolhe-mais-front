@@ -20,10 +20,10 @@ export function gerarHorariosIniciais(base: Date = new Date()): Horario[] {
   }
   dias.sort((a, b) => a.getTime() - b.getTime());
   const horarios: Horario[] = [];
-  for (const cdUnidade of [1, 2, 3]) for (const dia of dias) for (const hora of [8, 9, 10, 11, 14, 15, 16]) {
+  for (const idUnidade of [1, 2, 3]) for (const dia of dias) for (const hora of [8, 9, 10, 11, 14, 15, 16]) {
     const dt = new Date(dia);
     dt.setHours(hora);
-    horarios.push({ cdHorario: horarios.length + 1, cdUnidade, dtHorario: dt.toISOString(), nrDuracaoMin: 20, flOcupado: false });
+    horarios.push({ idHorario: horarios.length + 1, idUnidade, dtHorario: dt.toISOString(), nrDuracaoMinuto: 20, flOcupado: false });
   }
   return horarios;
 }

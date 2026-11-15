@@ -15,24 +15,24 @@ export interface ResumoSimulacao {
 }
 
 /** A mesma seleção vale para a oferta manual, automática e para o repasse. */
-export function oferecerHorario(estado: EstadoSimulador, cdHorario: number, agora: Date): EstadoSimulador {
-  const h = estado.horarios.find((x) => x.cdHorario === cdHorario);
+export function oferecerHorario(estado: EstadoSimulador, idHorario: number, agora: Date): EstadoSimulador {
+  const h = estado.horarios.find((x) => x.idHorario === idHorario);
   if (!h || !horarioOferecivel(h, estado.ofertas, agora)) return estado;
-  const perdida = [...estado.consultas].reverse().find((c) => c.cdHorario === cdHorario && c.dsStatus === "LIBERADA");
-  const entrada = escolherDestinatarioOferta(estado.listaDoDia.filter((e) => e.cdUnidade === h.cdUnidade), estado.ofertas, h, perdida?.cdCidadao ?? null, estado.consultas);
+  const perdida = [...estado.consultas].reverse().find((c) => c.idHorario === idHorario && c.dsStatus === "LIBERADA");
+  const entrada = escolherDestinatarioOferta(estado.listaDoDia.filter((e) => e.idUnidade === h.idUnidade), estado.ofertas, h, perdida?.idCidadao ?? null, estado.consultas);
   if (!entrada) return estado;
-  return { ...estado, ofertas: [...estado.ofertas, { cdOferta: Math.max(0, ...estado.ofertas.map((o) => o.cdOferta)) + 1, cdHorario, cdUnidade: h.cdUnidade, cdEntrada: entrada.cdEntrada, nmCidadao: entrada.nmCidadao, dtCriacao: agora.toISOString(), status: "PENDENTE" }] };
+  return { ...estado, ofertas: [...estado.ofertas, { idOferta: Math.max(0, ...estado.ofertas.map((o) => o.idOferta)) + 1, idHorario, idUnidade: h.idUnidade, idEntrada: entrada.idEntrada, nmCidadao: entrada.nmCidadao, dtCriacao: agora.toISOString(), status: "PENDENTE" }] };
 }
 
 /**
  * Encerra uma oferta de vaga. Aceita: a pessoa sai da lista do dia.
  * Recusada ou vencida: a mesma vaga é oferecida ao próximo da fila.
  */
-export function finalizarOferta(estado: EstadoSimulador, cdOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA", agora: Date): EstadoSimulador {
-  const oferta = estado.ofertas.find((o) => o.cdOferta === cdOferta && o.status === "PENDENTE");
+export function finalizarOferta(estado: EstadoSimulador, idOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA", agora: Date): EstadoSimulador {
+  const oferta = estado.ofertas.find((o) => o.idOferta === idOferta && o.status === "PENDENTE");
   if (!oferta) return estado;
-  const novo: EstadoSimulador = { ...estado, ofertas: estado.ofertas.map((o) => o.cdOferta === cdOferta ? { ...o, status: resposta } : o), listaDoDia: resposta === "ACEITA" ? estado.listaDoDia.map((e) => e.cdEntrada === oferta.cdEntrada ? { ...e, status: "ENCERRADA" } : e) : estado.listaDoDia };
-  return resposta === "ACEITA" ? novo : oferecerHorario(novo, oferta.cdHorario, agora);
+  const novo: EstadoSimulador = { ...estado, ofertas: estado.ofertas.map((o) => o.idOferta === idOferta ? { ...o, status: resposta } : o), listaDoDia: resposta === "ACEITA" ? estado.listaDoDia.map((e) => e.idEntrada === oferta.idEntrada ? { ...e, status: "ENCERRADA" } : e) : estado.listaDoDia };
+  return resposta === "ACEITA" ? novo : oferecerHorario(novo, oferta.idHorario, agora);
 }
 
 /**
@@ -42,7 +42,7 @@ export function finalizarOferta(estado: EstadoSimulador, cdOferta: number, respo
 export function vencerOfertas(estado: EstadoSimulador, agora: Date, todas = false): EstadoSimulador {
   // Usar o conjunto inicial: novas ofertas não expiram no mesmo clique.
   return estado.ofertas.filter((o) => o.status === "PENDENTE" && (todas || segundosRestantesOferta(o, agora) === 0))
-    .reduce((e, o) => finalizarOferta(e, o.cdOferta, "EXPIRADA", agora), estado);
+    .reduce((e, o) => finalizarOferta(e, o.idOferta, "EXPIRADA", agora), estado);
 }
 
 /**
@@ -50,33 +50,34 @@ export function vencerOfertas(estado: EstadoSimulador, agora: Date, todas = fals
  * e, com antecedência suficiente e alguém aguardando, é oferecido à lista do dia (oferecerHorario).
  * Usada pelo prazo de confirmação (simularPrazo) e pelo cancelamento.
  */
-export function liberarConsulta(estado: EstadoSimulador, cdConsulta: number, agora: Date): { novoEstado: EstadoSimulador; oferecida: boolean } {
-  const c = estado.consultas.find((x) => x.cdConsulta === cdConsulta);
+export function liberarConsulta(estado: EstadoSimulador, idConsulta: number, agora: Date): { novoEstado: EstadoSimulador; oferecida: boolean } {
+  const c = estado.consultas.find((x) => x.idConsulta === idConsulta);
   if (!c) return { novoEstado: estado, oferecida: false };
   const liberado: EstadoSimulador = {
     ...estado,
-    consultas: estado.consultas.map((x) => (x.cdConsulta === cdConsulta ? { ...x, dsStatus: "LIBERADA" } : x)),
-    horarios: estado.horarios.map((h) => (h.cdHorario === c.cdHorario ? { ...h, flOcupado: false } : h)),
+    consultas: estado.consultas.map((x) => (x.idConsulta === idConsulta ? { ...x, dsStatus: "LIBERADA" } : x)),
+    horarios: estado.horarios.map((h) => (h.idHorario === c.idHorario ? { ...h, flOcupado: false } : h)),
   };
-  const oferecido = oferecerHorario(liberado, c.cdHorario, agora);
+  if (c.idHorario === undefined) return { novoEstado: liberado, oferecida: false };
+  const oferecido = oferecerHorario(liberado, c.idHorario, agora);
   return { novoEstado: oferecido, oferecida: oferecido !== liberado };
 }
 
 /** Avança apenas o prazo das consultas no alcance, mantendo o relógio das vagas real. */
 export function simularPrazo(estado: EstadoSimulador, agora: Date): { novoEstado: EstadoSimulador; resumo: ResumoSimulacao } {
   const resumo: ResumoSimulacao = { consultasLiberadas: 0, vagasOferecidas: 0, vagasDeVoltaNaAgenda: 0, mantidasSemContato: 0 };
-  const dias = proximosDiasAtendimento(estado.horarios, estado.cdUnidadeRecepcao, agora);
+  const dias = proximosDiasAtendimento(estado.horarios, estado.idUnidadeRecepcao, agora);
   const alvo = estado.consultas.filter((c) => {
     const t = new Date(c.dtHorario).getTime();
-    const unidade = estado.horarios.find((h) => h.cdHorario === c.cdHorario)?.cdUnidade;
+    const unidade = estado.horarios.find((h) => h.idHorario === c.idHorario)?.idUnidade;
     return c.dsStatus === "AGENDADA" && !dispensadaConfirmacao(c) &&
-      ((unidade === estado.cdUnidadeRecepcao && t >= agora.getTime() && dias.includes(chaveDia(c.dtHorario))) || c.cdCidadao === estado.cdCidadaoAtual);
+      ((unidade === estado.idUnidadeRecepcao && t >= agora.getTime() && dias.includes(chaveDia(c.dtHorario))) || c.idCidadao === estado.idCidadaoAtual);
   });
   let novoEstado = estado;
   for (const c of alvo) {
-    const cidadao = estado.cidadaos.find((p) => p.cdCidadao === c.cdCidadao);
+    const cidadao = estado.cidadaos.find((p) => p.idCidadao === c.idCidadao);
     if (!cidadao || !temContatoValido(cidadao)) { resumo.mantidasSemContato++; continue; }
-    const { novoEstado: liberado, oferecida } = liberarConsulta(novoEstado, c.cdConsulta, agora);
+    const { novoEstado: liberado, oferecida } = liberarConsulta(novoEstado, c.idConsulta, agora);
     resumo.consultasLiberadas++;
     if (oferecida) resumo.vagasOferecidas++; else resumo.vagasDeVoltaNaAgenda++;
     novoEstado = liberado;

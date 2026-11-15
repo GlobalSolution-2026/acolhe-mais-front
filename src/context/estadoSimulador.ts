@@ -21,14 +21,14 @@ export interface EstadoSimulador {
   cidadaos: Cidadao[];
   consultas: Consulta[];
   /** UBS escolhida na aba Recepção. */
-  cdUnidadeRecepcao: number;
+  idUnidadeRecepcao: number;
   orientacoes: Orientacao[];
   /** Questionário em andamento no celular do cidadão. */
   orientacaoAtual: OrientacaoEmAndamento | null;
   listaDoDia: EntradaListaDoDia[];
   ofertas: OfertaVaga[];
   /** Cidadão logado no celular (null = sem login). */
-  cdCidadaoAtual: number | null;
+  idCidadaoAtual: number | null;
   /** Senhas do modo demonstração (login por CNS + senha). */
   credenciais: CredencialCidadao[];
   /** Fichas de saúde (prévia, sempre demonstração). */
@@ -38,7 +38,7 @@ export interface EstadoSimulador {
 const CHAVE_STORAGE = "acolhe-plus:simulador";
 
 /** Sobe quando o formato do estado muda: o estado salvo antigo é descartado. */
-const VERSAO_SEMENTE = 1;
+const VERSAO_SEMENTE = 2; // 2: nomes da API Java (id*), CEP e telefone só com números
 
 /**
  * Monta o estado inicial da demonstração a partir dos dados de exemplo (pasta data/).
@@ -54,12 +54,12 @@ export function estadoInicial(): EstadoSimulador {
     horarios: semente.horarios,
     cidadaos: semente.cidadaos,
     consultas: semente.consultas,
-    cdUnidadeRecepcao: 1,
+    idUnidadeRecepcao: 1,
     orientacoes: semente.orientacoes,
     orientacaoAtual: null,
     listaDoDia: semente.listaDoDia,
     ofertas: [],
-    cdCidadaoAtual: null,
+    idCidadaoAtual: null,
     credenciais: credenciaisIniciais,
     fichas: fichasIniciais(hoje),
   };

@@ -81,8 +81,8 @@ export function chaveDia(iso: string): string {
 }
 
 /** Fonte única dos dias disponíveis de uma unidade (só dias úteis). */
-export function listarDiasUnidade(horarios: Horario[], cdUnidade: number): string[] {
-  return [...new Set(horarios.filter((h) => h.cdUnidade === cdUnidade && isDiaUtil(new Date(h.dtHorario))).map((h) => chaveDia(h.dtHorario)))].sort();
+export function listarDiasUnidade(horarios: Horario[], idUnidade: number): string[] {
+  return [...new Set(horarios.filter((h) => h.idUnidade === idUnidade && isDiaUtil(new Date(h.dtHorario))).map((h) => chaveDia(h.dtHorario)))].sort();
 }
 
 /** Rótulo do dia nas listas de horários: "Hoje (seg., 16/11)" quando for hoje; senão, só o dia. */
@@ -92,6 +92,6 @@ export function rotuloDia(iso: string, longo = false, agora = new Date()): strin
 }
 
 /** Inclui hoje se ainda tem horário futuro; conta dias com atendimento, não dias corridos. */
-export function proximosDiasAtendimento(horarios: Horario[], cdUnidade: number, agora: Date, quantidade = 3): string[] {
-  return listarDiasUnidade(horarios.filter((h) => new Date(h.dtHorario) >= agora), cdUnidade).slice(0, quantidade);
+export function proximosDiasAtendimento(horarios: Horario[], idUnidade: number, agora: Date, quantidade = 3): string[] {
+  return listarDiasUnidade(horarios.filter((h) => new Date(h.dtHorario) >= agora), idUnidade).slice(0, quantidade);
 }

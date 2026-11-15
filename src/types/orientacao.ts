@@ -30,8 +30,8 @@ export interface Opcao {
 }
 
 export interface Pergunta {
-  cdPergunta: number;
-  cdQueixa: number | null;
+  idPergunta: number;
+  idQueixa: number | null;
   codigo: string;
   dsPergunta: string;
   nrOrdem: number;
@@ -46,7 +46,7 @@ export interface Pergunta {
 }
 
 export interface Queixa {
-  cdQueixa: number;
+  idQueixa: number;
   codigo: CodigoQueixa;
   nmQueixa: string;
 }
@@ -58,19 +58,19 @@ export interface ResultadoOrientacao {
 }
 
 export interface Orientacao {
-  cdOrientacao: number;
-  cdQueixa: number;
+  idOrientacao: number;
+  idQueixa: number;
   dsCor: Cor;
   dsDestino: Destino;
   nrDor: number | null;
   flElevadaModelo: boolean;
   dtOrientacao: string;
   /** Cidadão vinculado (orientação feita sem login fica null até o balcão vincular). */
-  cdCidadao?: number | null;
+  idCidadao?: number | null;
 }
 
 export interface ResultadoFinal extends ResultadoOrientacao {
-  cdOrientacao: number;
+  idOrientacao: number;
   nrDor: number | null;
   flElevadaModelo: boolean;
 }
@@ -83,7 +83,8 @@ export interface EnderecoCep {
 }
 
 export interface OrientacaoEmAndamento {
-  cdQueixa: CodigoQueixa;
+  /** Código da queixa escolhida (ex.: "GRIPAL"), não o id numérico. */
+  codigoQueixa: CodigoQueixa;
   nrCep: string;
   /** Dados do ViaCEP; ausentes se a consulta falhou (o CEP sozinho basta). */
   endereco?: EnderecoCep | null;

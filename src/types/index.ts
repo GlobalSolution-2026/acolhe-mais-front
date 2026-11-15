@@ -1,74 +1,117 @@
 /**
- * Tipos do Acolhe+ (vieram do protótipo do grupo).
- * Os nomes seguem os DTOs da API Java: cd = código (id), nm = nome, ds = descrição,
- * dt = data, nr = número, fl = flag (verdadeiro/falso), vl = valor, tp = tipo.
+ * Tipos do Acolhe+ (vieram do protótipo do grupo, com os nomes da API Java).
+ * Os nomes seguem os DTOs da API Java (repositório Acolhe-Mais-Java): id = identificador,
+ * nm = nome, ds = descrição, dt = data, nr = número, fl = flag (verdadeiro/falso), vl = valor, tp = tipo.
+ * Campos marcados com "TODO: aguardando a API Java" ainda não vêm da API (pedidos ao colega);
+ * no modo demonstração o mock preenche todos.
  */
 import type { Cor } from "./orientacao";
 
 export type TipoUnidade = "UBS" | "UPA";
 
-/** Unidade de saúde (UBS para agendar, UPA para urgência). */
+/** Unidade de saúde (UBS para agendar, UPA para urgência). UnidadeSaidaDTO da API. */
 export interface Unidade {
-  cdUnidade: number;
+  idUnidade: number;
   nmUnidade: string;
   tpUnidade: TipoUnidade;
   dsEndereco: string;
+  /** Só números (VARCHAR2(8) no banco); a tela formata com formatarCep. */
   nrCep: string;
+  /** Só números, com DDD; a tela formata com formatarTelefone. */
   nrTelefone: string;
 }
 
-/** Horário de atendimento de uma unidade (1:N com Unidade). */
+/** Horário de atendimento de uma unidade (1:N com Unidade). HorarioSaidaDTO da API. */
 export interface Horario {
-  cdHorario: number;
-  cdUnidade: number;
-  dtHorario: string; // ISO
-  nrDuracaoMin: number;
-  flOcupado: boolean;
+  idHorario: number;
+  idUnidade: number;
+  dtHorario: string; // ISO (a API manda sem fuso, no horário local)
+  nrDuracaoMinuto: number;
+  // TODO: aguardando a API Java (flOcupado no HorarioSaidaDTO)
+  flOcupado?: boolean;
 }
 
-/** Cadastro do cidadão. CNS = Cartão Nacional de Saúde (Cartão SUS, 15 números). */
+/** Forma de acesso do cidadão: conta com senha no app ou cadastro feito no balcão (sem senha). */
+export type TipoAcesso = "SENHA" | "BALCAO";
+
+/** Cadastro do cidadão. CidadaoSaidaDTO da API. CNS = Cartão Nacional de Saúde (Cartão SUS, 15 números). */
 export interface Cidadao {
-  cdCidadao: number;
+  idCidadao: number;
   nmCidadao: string;
   nrCns: string;
-  dtNascimento: string;
+  /** CPF é opcional no cadastro. */
+  nrCpf?: string | null;
+  dtNascimento: string; // aaaa-mm-dd
   dsSexo: "F" | "M";
+  /** Celular, telefone de recado e CEP: só números. */
   nrCelular: string;
   nmContatoRecado: string;
   nrContatoRecado: string;
   nrCep: string;
+  tpAcesso: TipoAcesso;
 }
 
-/** Dados enviados para criar ou atualizar um cidadão (o código é gerado pela API). */
-export type CidadaoEntrada = Omit<Cidadao, "cdCidadao">;
+/** Corpo do POST /cidadaos (CidadaoEntradaDTO): senha só quando tpAcesso for SENHA. */
+export type CidadaoEntrada = Omit<Cidadao, "idCidadao"> & { senha?: string };
+
+/**
+ * Corpo do PUT /cidadaos/{id}: só o que o app deixa editar.
+ * Regra RF27: Cartão SUS, nome, nascimento e sexo não mudam pelo app (isso é com a recepção).
+ */
+export type CidadaoAtualizacao = Pick<Cidadao, "nrCelular" | "nmContatoRecado" | "nrContatoRecado" | "nrCep">;
+
+/** Corpo do POST /cidadaos/login. */
+export interface LoginEntrada {
+  nrCns: string;
+  senha: string;
+}
 
 export type StatusConsulta = "AGENDADA" | "CONFIRMADA" | "LIBERADA" | "REALIZADA" | "FALTA";
 export type CanalConfirmacao = "APP" | "TELEFONE" | "PRESENCIAL";
 export type RiscoFalta = "BAIXO" | "ALTO";
 
-/** Consulta agendada numa UBS, com o risco de falta calculado pelo Modelo 1. */
+/** Consulta agendada numa UBS, com o risco de falta calculado pelo Modelo 1. ConsultaSaidaDTO da API. */
 export interface Consulta {
-  cdConsulta: number;
-  cdHorario: number;
-  cdCidadao: number;
-  cdOrientacao: number | null;
-  dtAgendamento: string;
-  dtConfirmacao: string | null;
-  dsCanalConfirmacao: CanalConfirmacao | null;
-  dsStatus: StatusConsulta;
-  vlProbFalta: number;
-  dsRiscoFalta: RiscoFalta;
+  idConsulta: number;
   nmUnidade: string;
   dtHorario: string;
+  nmCidadao: string;
+  dsStatus: StatusConsulta;
+  // TODO: aguardando a API Java (campos pedidos no ConsultaSaidaDTO)
+  idHorario?: number;
+  idCidadao?: number;
+  idOrientacao?: number | null;
+  dtAgendamento?: string;
+  dtConfirmacao?: string | null;
+  dsCanalConfirmacao?: CanalConfirmacao | null;
+  vlProbFalta?: number | null;
+  dsRiscoFalta?: RiscoFalta | null;
 }
 
-/** Pessoa aguardando encaixe na lista do dia de uma UBS. */
+/** Corpo do POST /consultas (ConsultaEntradaDTO). */
+export interface ConsultaEntrada {
+  idHorario: number;
+  idCidadao: number;
+  // TODO: aguardando a API Java (campos opcionais pedidos no ConsultaEntradaDTO)
+  idOrientacao?: number | null;
+  vlProbFalta?: number;
+  dsRiscoFalta?: RiscoFalta;
+}
+
+/** Corpo do PUT /consultas/{id}/status: confirmar, cancelar (LIBERADA), presença (REALIZADA) ou falta (FALTA). */
+export interface StatusConsultaEntrada {
+  dsStatus: StatusConsulta;
+  /** Só quando o status for CONFIRMADA. */
+  dsCanalConfirmacao?: CanalConfirmacao;
+}
+
+/** Pessoa aguardando encaixe na lista do dia de uma UBS (só no front por enquanto). */
 export interface EntradaListaDoDia {
-  cdEntrada: number;
-  cdCidadao: number | null;
+  idEntrada: number;
+  idCidadao: number | null;
   /** Orientação que levou à lista (ACM_LISTA_DIA.id_orientacao, NOT NULL). */
-  cdOrientacao: number;
-  cdUnidade: number;
+  idOrientacao: number;
+  idUnidade: number;
   nmCidadao: string;
   dsCor: Extract<Cor, "VERDE" | "AZUL">;
   dtEntrada: string; // ISO
@@ -81,21 +124,21 @@ export interface EntradaListaDoDia {
 
 export type StatusOferta = "PENDENTE" | "ACEITA" | "RECUSADA" | "EXPIRADA";
 
-/** Oferta de vaga liberada feita ao primeiro da lista do dia. */
+/** Oferta de vaga liberada feita ao primeiro da lista do dia (só no front). */
 export interface OfertaVaga {
-  cdOferta: number;
-  cdHorario: number;
-  cdUnidade: number;
-  cdEntrada: number;
+  idOferta: number;
+  idHorario: number;
+  idUnidade: number;
+  idEntrada: number;
   nmCidadao: string;
   dtCriacao: string; // ISO
   status: StatusOferta;
 }
 
-/** Formato de erro devolvido pela API Java (e pela Flask). */
-export interface ErroResponse {
+/** Formato de erro devolvido pela API Java (ErroDTO). A mensagem vem no campo "mensagem". */
+export interface ErroDTO {
   status: number;
-  erro: string;
+  mensagem: string;
 }
 
 export type CodigoDoencaBase = "DIABETES" | "HIPERTENSAO" | "PULMAO" | "CORACAO" | "RINS" | "IMUNIDADE" | "OUTRA";
@@ -108,7 +151,7 @@ export interface MedicamentoContinuo {
 
 /** Ficha de saúde opcional do cidadão (dado sensível — LGPD, art. 11). Prévia: sempre demonstração. */
 export interface FichaSaude {
-  cdCidadao: number;
+  idCidadao: number;
   dsDoencasBase: CodigoDoencaBase[];
   dsOutraDoenca: string;
   medicamentos: MedicamentoContinuo[];
@@ -120,7 +163,7 @@ export interface FichaSaude {
 
 /** Credencial do modo demonstração (a autenticação real será feita pela API Java). */
 export interface CredencialCidadao {
-  cdCidadao: number;
+  idCidadao: number;
   dsSenha: string;
 }
 
@@ -144,7 +187,10 @@ export interface PrevisaoFaltaEntrada {
 }
 
 /** Resultado do Modelo 1 já convertido para os nomes usados na Consulta. */
-export type PrevisaoFalta = Pick<Consulta, "vlProbFalta" | "dsRiscoFalta">;
+export interface PrevisaoFalta {
+  vlProbFalta: number;
+  dsRiscoFalta: RiscoFalta;
+}
 
 /** Resultado do Modelo 2 (verificação de urgência). */
 export interface VerificacaoUrgenciaSaida {
