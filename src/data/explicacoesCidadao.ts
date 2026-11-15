@@ -51,6 +51,36 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     ],
     endpoints: [{ metodo: "GET", rota: "/ws/{cep}/json/", api: "VIACEP" }],
   },
+  orientacao: {
+    titulo: "Cidadão · Orientação",
+    oQueFaz:
+      "Faz as perguntas uma por vez, começando pelo perfil (para quem é, idade, sexo, gestação) e pela dor de 0 a 10. As perguntas são inspiradas no Protocolo de Manchester, que classifica o atendimento por cores conforme a gravidade.",
+    regras: [
+      "A plataforma orienta, não faz diagnóstico.",
+      "Os alarmes são conferidos do mais grave para o mais leve: o primeiro que bate define a cor e encerra as perguntas.",
+      "\"Não sei\" vale como o pior caso (com poucas exceções).",
+      "Só para maiores de 18 anos; dor de garganta com tosse ou coriza segue o fluxo de síndrome gripal.",
+      "Com login e \"Para mim\", idade, sexo e doenças da ficha não são perguntados de novo (a tela avisa o que foi usado).",
+    ],
+    endpoints: [],
+  },
+  resultado: {
+    titulo: "Cidadão · Resultado",
+    oQueFaz:
+      "Mostra a cor e o destino: vermelho → SAMU 192; laranja → pronto-socorro; amarelo → UPA mais próxima; verde e azul → UBS. Antes de mostrar verde ou azul, o Modelo 2 de IA confere se o caso pode ser urgente.",
+    regras: [
+      "Cores inspiradas no Protocolo de Manchester: vermelho (emergência), laranja (muito urgente), amarelo (urgente), verde e azul (pouco ou não urgente).",
+      "O Modelo 2 só pode ELEVAR a cor (verde/azul → amarelo), nunca baixar. Quando eleva, a tela avisa.",
+      "Se a API de IA falhar, a orientação segue com a cor das regras e mostra um aviso discreto (não pode travar).",
+      "UPA e UBS indicadas pelo CEP (os 3 primeiros números indicam a região).",
+      "O código da orientação vale só no dia, para mostrar na recepção da UBS.",
+    ],
+    endpoints: [
+      { metodo: "POST", rota: "/verificar-urgencia", api: "FLASK" },
+      { metodo: "GET", rota: "/unidades", api: "JAVA" },
+      { metodo: "POST", rota: "orientação salva", api: "FRONT" },
+    ],
+  },
   emergencia: {
     titulo: "Cidadão · Emergência",
     oQueFaz:
