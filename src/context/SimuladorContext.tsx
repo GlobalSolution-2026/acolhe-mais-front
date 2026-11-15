@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { conectarStore } from "../services/api";
 import { carregarFeriados } from "../lib/feriados";
 import { carregarPreferenciaSimulacao } from "../lib/relogio";
+import { iniciarQuestionario } from "../services/regrasOrientacao";
+import type { CodigoQueixa, LocalOrientacao } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
 import { SimuladorContext } from "./simuladorContexto";
 
@@ -62,6 +64,13 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     setEstado(novo);
   }, []);
 
+  /** Começa uma orientação nova (a anterior, se houver, é substituída). */
+  const iniciarOrientacao = useCallback(
+    (codigoQueixa: CodigoQueixa, nrCep: string, local: LocalOrientacao = {}) =>
+      atualizarEstado((e) => ({ ...e, orientacaoAtual: iniciarQuestionario(codigoQueixa, nrCep, local) })),
+    [atualizarEstado],
+  );
+
   // Liga os serviços a este estado enquanto o simulador estiver aberto.
   useEffect(() => {
     conectarStore({ obterEstado, atualizarEstado });
@@ -70,8 +79,8 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
 
   // versaoFeriados entra nas dependências para as telas renderizarem de novo quando os feriados chegam.
   const valor = useMemo(
-    () => ({ estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados }),
-    [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados],
+    () => ({ estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados, iniciarOrientacao }),
+    [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados, iniciarOrientacao],
   );
 
   return <SimuladorContext.Provider value={valor}>{children}</SimuladorContext.Provider>;
