@@ -69,10 +69,14 @@ export interface Orientacao {
   idCidadao?: number | null;
 }
 
+/** Resultado mostrado na tela: cor das regras + verificação de IA + código da orientação salva. */
 export interface ResultadoFinal extends ResultadoOrientacao {
   idOrientacao: number;
   nrDor: number | null;
+  /** true quando a verificação de urgência (Modelo 2) elevou verde/azul para amarelo. */
   flElevadaModelo: boolean;
+  /** true quando a verificação de urgência falhou e o resultado ficou só com as regras (aviso discreto). */
+  flVerificacaoIndisponivel: boolean;
 }
 
 export interface EnderecoCep {
