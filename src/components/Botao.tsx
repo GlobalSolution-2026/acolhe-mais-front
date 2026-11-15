@@ -4,7 +4,8 @@ interface BotaoProps {
   children: ReactNode;
   acao?: () => void;
   tipo?: 'button' | 'submit' | 'reset';
-  variante?: 'primario' | 'secundario' | 'escuro';
+  /** 'simulador' e 'simuladorContorno' usam a paleta do simulador (azul-marinho + menta). */
+  variante?: 'primario' | 'secundario' | 'escuro' | 'simulador' | 'simuladorContorno';
   desabilitado?: boolean;
   className?: string;
 }
@@ -32,12 +33,27 @@ export default function Botao({
     escuro: 'bg-[#1C1C1C] hover:bg-stone-800 text-white shadow-sm',
   };
 
+  // Simulador: botões com os tokens do @theme, altura mínima de 48 px, cantos de 12 px e sombra leve.
+  // Têm base própria para não misturar com o efeito de onda verde das páginas institucionais.
+  const baseSimulador =
+    'min-h-12 px-5 rounded-xl font-bold font-nunito inline-flex items-center justify-center gap-2 shadow-leve transition-colors select-none cursor-pointer active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const variantesSimulador = {
+    simulador: 'bg-primaria hover:bg-primariaEscura text-branco',
+    simuladorContorno: 'border-2 border-primaria bg-branco text-primaria hover:bg-mentaSuave',
+  };
+
+  const classes =
+    variante === 'simulador' || variante === 'simuladorContorno'
+      ? `${baseSimulador} ${variantesSimulador[variante]}`
+      : `${base} ${variantes[variante]}`;
+
   return (
     <button
       type={tipo}
       onClick={acao}
       disabled={desabilitado}
-      className={`${base} ${variantes[variante]} ${className}`}
+      className={`${classes} ${className}`}
     >
       {children}
     </button>
