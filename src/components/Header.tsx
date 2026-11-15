@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
-import Botao from './Botao';
 
 export default function Header() {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -28,14 +27,8 @@ export default function Header() {
           <Link to="/integrantes" className="hover:text-[#148565] transition-colors">Integrantes</Link>
         </nav>
 
-        {/* Botão Simulador Verde e Botão do Menu Mobile */}
+        {/* Botão do Menu Mobile */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link to="/simulador" className="hidden sm:block">
-            <Botao variante="primario" className="bg-[#00d186] text-[#024131] hover:bg-[#00b574] font-bold px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm shadow-sm transition-all border-none">
-              Simulador
-            </Botao>
-          </Link>
-
           {/* Botão Hamburguer para Mobile / Tablet */}
           <button 
             onClick={() => setMenuAberto(!menuAberto)}
@@ -53,19 +46,11 @@ export default function Header() {
         <div className="lg:hidden absolute top-20 left-4 right-4 bg-white/95 backdrop-blur-lg border border-stone-200 rounded-3xl p-6 shadow-xl flex flex-col gap-4 text-center animate-fade-in z-50">
           <Link to="/" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Home</Link>
           <Link to="/sobre" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Sobre</Link>
-          <Link to="/solucao/1" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Solução</Link>
+          <Link to="/solucao" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Solução</Link>
           <Link to="/simulador" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Simulador</Link>
           <Link to="/faq" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">FAQ</Link>
           <Link to="/contato" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Contato</Link>
           <Link to="/integrantes" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors">Integrantes</Link>
-          
-          <div className="pt-2">
-            <Link to="/simulador" onClick={fecharMenu}>
-              <Botao variante="primario" className="w-full bg-[#00d186] text-[#024131] py-3 rounded-full font-bold">
-                Simulador
-              </Botao>
-            </Link>
-          </div>
         </div>
       )}
     </header>
