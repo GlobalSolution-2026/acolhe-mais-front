@@ -7,8 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { conectarStore } from "../services/api";
 import { carregarFeriados } from "../lib/feriados";
 import { carregarPreferenciaSimulacao } from "../lib/relogio";
-import { iniciarQuestionario } from "../services/regrasOrientacao";
-import type { CodigoQueixa, LocalOrientacao } from "../types/orientacao";
+import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
+import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
 import { SimuladorContext } from "./simuladorContexto";
 
@@ -71,6 +71,30 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     [atualizarEstado],
   );
 
+  /** Altera a orientação em andamento (se não houver nenhuma, não faz nada). */
+  const alterarOrientacao = useCallback(
+    (fn: (o: OrientacaoEmAndamento) => OrientacaoEmAndamento) =>
+      atualizarEstado((e) => (e.orientacaoAtual ? { ...e, orientacaoAtual: fn(e.orientacaoAtual) } : e)),
+    [atualizarEstado],
+  );
+
+  const responder = useCallback(
+    (codigo: string, valor: Resposta) => alterarOrientacao((o) => responderNoQuestionario(o, codigo, valor)),
+    [alterarOrientacao],
+  );
+
+  const voltarPergunta = useCallback(() => alterarOrientacao(voltarNoQuestionario), [alterarOrientacao]);
+
+  const trocarQueixa = useCallback(
+    (codigoQueixa: CodigoQueixa) => alterarOrientacao((o) => trocarQueixaNoQuestionario(o, codigoQueixa)),
+    [alterarOrientacao],
+  );
+
+  const definirResultado = useCallback(
+    (resultado: ResultadoFinal) => alterarOrientacao((o) => ({ ...o, resultado })),
+    [alterarOrientacao],
+  );
+
   // Liga os serviços a este estado enquanto o simulador estiver aberto.
   useEffect(() => {
     conectarStore({ obterEstado, atualizarEstado });
@@ -79,8 +103,12 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
 
   // versaoFeriados entra nas dependências para as telas renderizarem de novo quando os feriados chegam.
   const valor = useMemo(
-    () => ({ estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados, iniciarOrientacao }),
-    [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados, iniciarOrientacao],
+    () => ({
+      estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
+      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
+    }),
+    [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
+      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado],
   );
 
   return <SimuladorContext.Provider value={valor}>{children}</SimuladorContext.Provider>;

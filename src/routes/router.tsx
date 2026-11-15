@@ -34,6 +34,8 @@ import NaoEncontrada from '../pages/NaoEncontrada';
 import AbaCidadao from '../pages/simulador/cidadao/AbaCidadao';
 import Inicio from '../pages/simulador/cidadao/Inicio';
 import Emergencia from '../pages/simulador/cidadao/Emergencia';
+import Orientacao from '../pages/simulador/cidadao/Orientacao';
+import Resultado from '../pages/simulador/cidadao/Resultado';
 import TelaEmConstrucao from '../components/celular/TelaEmConstrucao';
 import { BASE_CELULAR } from '../services/navegacao';
 import AbaRecepcao from '../pages/simulador/recepcao/AbaRecepcao';
@@ -69,8 +71,8 @@ export const router = createBrowserRouter([
               { index: true, element: <Navigate to="inicio" replace /> },
               { path: 'inicio', element: <Inicio /> },
               { path: 'emergencia', element: <Emergencia /> },
-              { path: 'orientacao', element: emConstrucao('Orientação', 'bloco 3') },
-              { path: 'resultado', element: emConstrucao('Resultado', 'bloco 3') },
+              { path: 'orientacao', element: <Orientacao /> },
+              { path: 'resultado', element: <Resultado /> },
               { path: 'ubs', element: emConstrucao('UBS próximas', 'bloco 4') },
               { path: 'ubs/:idUnidade', element: emConstrucao('Horários da UBS', 'bloco 4') },
               { path: 'entrar', element: emConstrucao('Entrar', 'bloco 4') },
