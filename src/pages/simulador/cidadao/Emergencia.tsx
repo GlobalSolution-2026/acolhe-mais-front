@@ -1,6 +1,6 @@
 /**
  * Página: Emergência (aba Cidadão → celular, /simulador/cidadao/emergencia)
- * Aberta pelo botão vermelho da barra (ou pelo atalho do Início), sem pedir login.
+ * Aberta pelo botão vermelho da barra inferior do celular, sem pedir login.
  * Mostra o SAMU 192 com o botão de ligar e o roteiro da ligação; para quem está logado e tem ficha
  * de saúde, a ficha de emergência (prévia); e o Disque-Intoxicação.
  * Veio do protótipo: src/pages/cidadao/Emergencia.tsx + o roteiro do resultado vermelho.

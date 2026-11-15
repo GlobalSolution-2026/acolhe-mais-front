@@ -47,7 +47,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "A orientação e a Emergência não pedem login.",
       "O CEP tem 8 números; o endereço do ViaCEP é só um complemento.",
       "Se o ViaCEP falhar ou não achar o CEP, a pessoa segue só com o CEP (a orientação nunca trava).",
-      "Para emergência, o atalho leva direto ao SAMU 192.",
+      "Para emergência, o botão vermelho da barra leva direto ao SAMU 192, em qualquer tela.",
     ],
     endpoints: [{ metodo: "GET", rota: "/ws/{cep}/json/", api: "VIACEP" }],
   },

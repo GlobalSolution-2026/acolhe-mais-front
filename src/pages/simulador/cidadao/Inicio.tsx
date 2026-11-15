@@ -1,7 +1,8 @@
 /**
  * Página: Início (aba Cidadão → celular, /simulador/cidadao/inicio)
  * Primeira tela do app: a pessoa informa o CEP (o ViaCEP completa o endereço), pode digitar número
- * e complemento e escolhe uma das 5 queixas para começar a orientação. Tem o acesso rápido à Emergência.
+ * e complemento e escolhe uma das 5 queixas para começar a orientação. A Emergência fica no botão
+ * vermelho da barra inferior do celular, sempre visível.
  * Veio do protótipo: src/pages/cidadao/Inicio.tsx.
  * Endpoints: GET https://viacep.com.br/ws/{cep}/json/ (API externa).
  * Estados: buscando endereço, endereço encontrado, CEP não encontrado e falha do ViaCEP.
@@ -9,9 +10,9 @@
  */
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
-import { FiAlertTriangle, FiChevronRight, FiDroplet, FiFrown, FiThermometer, FiWind, FiZap } from 'react-icons/fi';
+import { FiDroplet, FiFrown, FiThermometer, FiWind, FiZap } from 'react-icons/fi';
 import CampoFormulario from '../../../components/CampoFormulario';
 import { useSimulador } from '../../../context/useSimulador';
 import { queixas } from '../../../data/queixas';
@@ -102,15 +103,6 @@ export default function Inicio() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        to={`${BASE_CELULAR}/emergencia`}
-        className="flex items-center gap-3 rounded-xl border-2 border-gravidade-vermelho bg-branco p-3 font-bold shadow-leve"
-      >
-        <FiAlertTriangle size={24} className="shrink-0 text-gravidade-vermelho" aria-hidden />
-        <span className="flex-1">É uma emergência? Ligue 192</span>
-        <FiChevronRight aria-hidden />
-      </Link>
-
       <div className="flex flex-col gap-3">
         <CampoFormulario id="cep" label="Seu CEP" placeholder="00000-000" numerico registro={registroCep} erro={errors.cep} />
         {cepCompleto && (
