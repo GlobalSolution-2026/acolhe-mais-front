@@ -3,7 +3,7 @@
  * só aceita componentes nos arquivos .tsx; o hook useSimulador() está em useSimulador.ts.
  */
 import { createContext } from "react";
-import type { CodigoQueixa, LocalOrientacao } from "../types/orientacao";
+import type { CodigoQueixa, LocalOrientacao, Resposta, ResultadoFinal } from "../types/orientacao";
 import type { EstadoSimulador } from "./estadoSimulador";
 
 /** O que o SimuladorProvider entrega para as telas. */
@@ -20,6 +20,14 @@ export interface SimuladorValor {
   versaoFeriados: number;
   /** Começa uma orientação nova com a queixa escolhida, o CEP e o endereço (tela Início). */
   iniciarOrientacao: (codigoQueixa: CodigoQueixa, nrCep: string, local?: LocalOrientacao) => void;
+  /** Grava a resposta de uma pergunta da orientação. */
+  responder: (codigo: string, valor: Resposta) => void;
+  /** Desfaz a última resposta ("Pergunta anterior"). */
+  voltarPergunta: () => void;
+  /** Troca a queixa mantendo as respostas do perfil (ex.: garganta com tosse → síndrome gripal). */
+  trocarQueixa: (codigoQueixa: CodigoQueixa) => void;
+  /** Guarda o resultado final (cor, destino e código da orientação). */
+  definirResultado: (resultado: ResultadoFinal) => void;
 }
 
 export const SimuladorContext = createContext<SimuladorValor | null>(null);
