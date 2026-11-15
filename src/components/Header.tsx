@@ -53,7 +53,7 @@ export default function Header() {
         <div className="lg:hidden absolute top-20 left-4 right-4 bg-white/95 backdrop-blur-lg border border-stone-200 rounded-3xl p-6 shadow-xl flex flex-col gap-4 text-center animate-fade-in z-50">
           <Link to="/" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Home</Link>
           <Link to="/sobre" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Sobre</Link>
-          <Link to="/solucao/1" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Solução</Link>
+          <Link to="/solucao" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Solução</Link>
           <Link to="/simulador" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Simulador</Link>
           <Link to="/faq" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">FAQ</Link>
           <Link to="/contato" onClick={fecharMenu} className="text-stone-800 font-medium py-2 hover:text-[#148565] transition-colors border-b border-stone-100">Contato</Link>
