@@ -1,6 +1,7 @@
 import { FiMapPin, FiPhone } from 'react-icons/fi';
 import type { Unidade } from '../types';
 import Botao from './Botao';
+import { formatarCep, formatarTelefone } from '../utils/formatadores';
 
 interface CardUnidadeProps {
   unidade: Unidade;
@@ -18,11 +19,11 @@ export default function CardUnidade({ unidade, onVerHorarios }: CardUnidadeProps
       </div>
       <p className="flex items-start gap-2 text-sm text-textoSuave">
         <FiMapPin className="mt-0.5 shrink-0" aria-hidden />
-        {unidade.dsEndereco} · CEP {unidade.nrCep}
+        {unidade.dsEndereco} · CEP {formatarCep(unidade.nrCep)}
       </p>
       <p className="flex items-center gap-2 text-sm text-textoSuave">
         <FiPhone aria-hidden />
-        {unidade.nrTelefone}
+        {formatarTelefone(unidade.nrTelefone)}
       </p>
       {onVerHorarios && (
         <Botao variante="simulador" acao={onVerHorarios} className="mt-3 w-full">
