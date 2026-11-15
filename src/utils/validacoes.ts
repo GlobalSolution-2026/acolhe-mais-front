@@ -34,3 +34,23 @@ export const regrasDataNascimento = {
 export const regrasSexo = {
   required: 'Informe o sexo.',
 };
+
+// Senha do app: mínimo de 6 caracteres (mesma regra do mock de criar conta).
+export const regrasSenha = {
+  required: 'Informe a senha.',
+  minLength: { value: 6, message: 'A senha precisa ter pelo menos 6 caracteres.' },
+};
+
+// Na tela Entrar, a senha só precisa estar preenchida (quem confere é a API).
+export const regrasSenhaEntrar = {
+  required: 'Informe a senha.',
+};
+
+// CEP com 8 números, com ou sem hífen (ex.: 04010-100).
+export const regrasCep = {
+  required: 'Informe o CEP.',
+  pattern: {
+    value: /^\d{5}-?\d{3}$/,
+    message: 'O CEP deve ter 8 números (ex.: 04010-100).',
+  },
+};
