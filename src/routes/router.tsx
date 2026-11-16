@@ -14,6 +14,8 @@
  *   (inicio, orientacao, resultado, emergencia, ubs, ubs/:idUnidade, entrar, criar-conta, agendar,
  *   sucesso, lista-do-dia, consultas, avisos, perfil, perfil/editar e perfil/ficha).
  *   ubs/:idUnidade é a rota com parâmetro (lido com useParams).
+ * - /simulador/recepcao: painel da recepção com abas internas (agenda, balcao, pendentes, lista-do-dia
+ *   e indicadores); /simulador/recepcao sozinho abre a Agenda.
  * - path "*": qualquer URL que não existe mostra a página NaoEncontrada, mantendo Header e Footer.
  * - errorElement: se uma rota quebrar ao carregar, mostra a NaoEncontrada no lugar da tela de erro padrão.
  */
@@ -50,6 +52,11 @@ import EditarPerfil from '../pages/simulador/cidadao/EditarPerfil';
 import FichaSaude from '../pages/simulador/cidadao/FichaSaude';
 import { BASE_CELULAR } from '../services/navegacao';
 import AbaRecepcao from '../pages/simulador/recepcao/AbaRecepcao';
+import Agenda from '../pages/simulador/recepcao/Agenda';
+import Balcao from '../pages/simulador/recepcao/Balcao';
+import Pendentes from '../pages/simulador/recepcao/Pendentes';
+import ListaDoDiaRecepcao from '../pages/simulador/recepcao/ListaDoDiaRecepcao';
+import Indicadores from '../pages/simulador/recepcao/Indicadores';
 import AbaStatus from '../pages/simulador/status/AbaStatus';
 import AbaIaRiscoFalta from '../pages/simulador/ia/AbaIaRiscoFalta';
 import AbaIaUrgencia from '../pages/simulador/ia/AbaIaUrgencia';
@@ -98,7 +105,20 @@ export const router = createBrowserRouter([
               { path: '*', element: <Navigate to={`${BASE_CELULAR}/inicio`} replace /> },
             ],
           },
-          { path: 'recepcao', element: <AbaRecepcao /> },
+          {
+            path: 'recepcao',
+            element: <AbaRecepcao />,
+            children: [
+              { index: true, element: <Navigate to="agenda" replace /> },
+              { path: 'agenda', element: <Agenda /> },
+              { path: 'balcao', element: <Balcao /> },
+              { path: 'pendentes', element: <Pendentes /> },
+              { path: 'lista-do-dia', element: <ListaDoDiaRecepcao /> },
+              { path: 'indicadores', element: <Indicadores /> },
+              // Aba interna que não existe: volta para a Agenda (caminho absoluto, como no celular)
+              { path: '*', element: <Navigate to="/simulador/recepcao/agenda" replace /> },
+            ],
+          },
           { path: 'status', element: <AbaStatus /> },
           { path: 'ia-risco-falta', element: <AbaIaRiscoFalta /> },
           { path: 'ia-urgencia', element: <AbaIaUrgencia /> },
