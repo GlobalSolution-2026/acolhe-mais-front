@@ -2,7 +2,7 @@
  * Dados dos integrantes do grupo (decisoes-front.md, seção 7, e demonstração 06-integrantes.html).
  * Fotos: arquivos em public/integrantes/<RM>.jpeg, referenciados no campo foto.
  * Sem foto, ou se a imagem não carregar, o AvatarIntegrante mostra as iniciais.
- * RMs, turmas e links: lista enviada pelo grupo (os RMs batem com os nomes das fotos).
+ * RMs e links: lista enviada pelo grupo (os RMs batem com os nomes das fotos). Turmas conferidas pelo grupo (1TDSPI, 1TDSPO e 1TDSPW).
  */
 import type { Integrante } from '../types/institucional';
 
@@ -71,7 +71,7 @@ export const INTEGRANTES: Integrante[] = [
     rm: '568780',
     nome: 'Nicolas Frazão Viera Molina',
     funcao: 'Inteligência artificial',
-    turma: '1TDSPI',
+    turma: '1TDSPO',
     disciplinas: ['IA'],
     contribuicoes: [
       {
@@ -91,7 +91,7 @@ export const INTEGRANTES: Integrante[] = [
     // "NM" já é do Nicolas Molina; aqui usa nome e segundo nome, como na demonstração.
     iniciais: 'NR',
     funcao: 'Back-end (Java)',
-    turma: '1TDSPI',
+    turma: '1TDSPW',
     disciplinas: ['Java'],
     contribuicoes: [
       {
