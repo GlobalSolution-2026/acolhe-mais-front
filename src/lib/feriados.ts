@@ -4,7 +4,9 @@
  * substituído pela resposta da API quando ela chega. Se a API falhar, a lista fixa continua valendo.
  */
 
+/** Endereço da BrasilAPI (feriados nacionais por ano). */
 const URL_FERIADOS = "https://brasilapi.com.br/api/feriados/v1";
+/** Chave do localStorage onde os feriados de cada ano ficam guardados. */
 const CHAVE_STORAGE = (ano: number) => `acolhe-plus:feriados:${ano}`;
 
 /** Feriados nacionais de 2026 (Leis 662/1949, 6.802/1980 e 14.759/2023), usados se a API falhar. */
