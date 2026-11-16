@@ -8,7 +8,7 @@ import { conectarStore } from "../services/api";
 import { carregarFeriados } from "../lib/feriados";
 import { agora, carregarPreferenciaSimulacao } from "../lib/relogio";
 import { entradaDoCidadao, listaDoDiaAberta, vincularEntradaSemLogin } from "../services/regrasAgendamento";
-import { finalizarOferta, vencerOfertas } from "../services/simulacao";
+import { finalizarOferta, oferecerHorario, simularPrazo, vencerOfertas } from "../services/simulacao";
 import type { EntradaListaDoDia } from "../types";
 import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
 import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
@@ -139,6 +139,35 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     [atualizarEstado],
   );
 
+  const selecionarUnidadeRecepcao = useCallback(
+    (idUnidade: number) => atualizarEstado((e) => ({ ...e, idUnidadeRecepcao: idUnidade })),
+    [atualizarEstado],
+  );
+
+  const oferecerVaga = useCallback(
+    (idHorario: number) => atualizarEstado((e) => oferecerHorario(e, idHorario, agora())),
+    [atualizarEstado],
+  );
+
+  /** Libera as consultas não confirmadas da UBS da recepção e devolve o resumo do que aconteceu. */
+  const simularPassagemPrazo = useCallback(() => {
+    const { novoEstado, resumo } = simularPrazo(ref.current, agora());
+    atualizarEstado(() => novoEstado);
+    return resumo;
+  }, [atualizarEstado]);
+
+  const vencerPrazoOfertas = useCallback(() => atualizarEstado((e) => vencerOfertas(e, agora(), true)), [atualizarEstado]);
+
+  // Regra: quem não foi encaixado no dia ganha prioridade no próximo dia útil.
+  const encerrarDia = useCallback(
+    () =>
+      atualizarEstado((e) => ({
+        ...e,
+        listaDoDia: e.listaDoDia.map((x) => (x.status === "AGUARDANDO" ? { ...x, flPrioridade: true } : x)),
+      })),
+    [atualizarEstado],
+  );
+
   // A cada segundo, vence as ofertas de vaga cujo prazo de 30 min (simulados) acabou e repassa a vaga.
   useEffect(() => {
     const relogio = setInterval(() => {
@@ -160,10 +189,12 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
       estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
       iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
       definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta,
+      selecionarUnidadeRecepcao, oferecerVaga, simularPassagemPrazo, vencerPrazoOfertas, encerrarDia,
     }),
     [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
       iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
-      definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta],
+      definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta,
+      selecionarUnidadeRecepcao, oferecerVaga, simularPassagemPrazo, vencerPrazoOfertas, encerrarDia],
   );
 
   return <SimuladorContext.Provider value={valor}>{children}</SimuladorContext.Provider>;

@@ -4,6 +4,7 @@
  */
 import { createContext } from "react";
 import type { EntradaListaDoDia } from "../types";
+import type { ResumoSimulacao } from "../services/simulacao";
 import type { CodigoQueixa, LocalOrientacao, Resposta, ResultadoFinal } from "../types/orientacao";
 import type { EstadoSimulador } from "./estadoSimulador";
 
@@ -37,6 +38,16 @@ export interface SimuladorValor {
   entrarNaListaDoDia: (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number) => void;
   /** Resposta do cidadão a uma oferta de vaga (demonstração). Recusada/vencida: a vaga vai para o próximo. */
   responderOferta: (idOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA") => void;
+  /** Troca a UBS mostrada no painel da recepção. */
+  selecionarUnidadeRecepcao: (idUnidade: number) => void;
+  /** A recepção oferece um horário livre de hoje ao primeiro da lista do dia (demonstração). */
+  oferecerVaga: (idHorario: number) => void;
+  /** DEMONSTRAÇÃO: faz o prazo de confirmação passar e libera as consultas não confirmadas. */
+  simularPassagemPrazo: () => ResumoSimulacao;
+  /** DEMONSTRAÇÃO: vence agora todas as ofertas de vaga pendentes. */
+  vencerPrazoOfertas: () => void;
+  /** DEMONSTRAÇÃO: encerra o dia; quem não foi encaixado ganha prioridade no próximo. */
+  encerrarDia: () => void;
 }
 
 export const SimuladorContext = createContext<SimuladorValor | null>(null);

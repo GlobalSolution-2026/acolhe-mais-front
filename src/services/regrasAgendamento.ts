@@ -139,6 +139,20 @@ export function calcularIndicadores(consultas: Consulta[], listaDoDia: EntradaLi
   return { taxaAbsenteismo, taxaReaproveitamento, naoEncaixadas, comparecimentoAposOrientacao };
 }
 
+/**
+ * Tempo médio até a consulta (Tabela 5 do texto): média de dias entre o agendamento e a data da consulta.
+ * Mede quanto a pessoa espera para ser atendida na UBS.
+ * @returns média em dias (com 1 casa) ou null se nenhuma consulta tiver a data do agendamento
+ */
+export function tempoMedioAteConsulta(consultas: Consulta[]): number | null {
+  const dias = consultas
+    .filter((c) => c.dtAgendamento && c.dsStatus !== "LIBERADA")
+    .map((c) => (new Date(c.dtHorario).getTime() - new Date(c.dtAgendamento ?? c.dtHorario).getTime()) / 86_400_000)
+    .filter((d) => d >= 0);
+  if (dias.length === 0) return null;
+  return Math.round((dias.reduce((a, b) => a + b, 0) / dias.length) * 10) / 10;
+}
+
 /** Consulta ativa (agendada ou confirmada) da pessoa no dia "aaaa-mm-dd"; a mais cedo, se houver mais de uma. */
 export function consultaNoDia(consultas: Consulta[], idCidadao: number | null, dia: string): Consulta | undefined {
   if (idCidadao === null) return undefined;
