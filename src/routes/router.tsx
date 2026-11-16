@@ -28,7 +28,6 @@ import Sobre from '../pages/Sobre';
 import Faq from '../pages/Faq';
 import Contato from '../pages/Contato';
 import Integrantes from '../pages/Integrantes';
-import IntegranteDetalhe from '../pages/IntegranteDetalhe';
 import Solucao from '../pages/Solucao';
 import Simulador from '../pages/Simulador';
 import NaoEncontrada from '../pages/NaoEncontrada';
@@ -71,7 +70,7 @@ export const router = createBrowserRouter([
       { path: '/faq', element: <Faq /> },
       { path: '/contato', element: <Contato /> },
       { path: '/integrantes', element: <Integrantes /> },
-      { path: '/integrantes/:rm', element: <IntegranteDetalhe /> },
+      { path: '/integrantes/:rm', element: <Integrantes /> },
       { path: '/solucao', element: <Solucao /> },
       {
         path: '/simulador',

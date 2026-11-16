@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus, FiMinus, FiMessageCircle } from 'react-icons/fi';
 
-// Dados baseados estritamente nas regras de negócio do PDF do projeto Acolhe+
+
 const faqData = [
   {
     pergunta: "O que é o Acolhe+?",
@@ -31,7 +31,7 @@ const faqData = [
 ];
 
 export default function Faq() {
-  // Estado para controlar qual pergunta está aberta (null = todas fechadas)
+
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
@@ -39,24 +39,25 @@ export default function Faq() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-stone-800 animate-fade-in pb-24">
+
+    <div className="min-h-screen bg-fundo font-sans text-texto animate-fade-in pb-24">
       
-      {/* 1. HERO SECTION (Estilo limpo e direto) */}
-      <section className="bg-[#fbfdfc] pt-40 pb-20 px-6 lg:px-16 xl:px-24 border-b border-stone-100">
+
+      <section className="bg-white pt-40 pb-20 px-6 lg:px-16 xl:px-24 border-b border-borda">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <span className="text-sm font-bold text-[#004d3a] tracking-widest uppercase">
+          <span className="text-sm font-bold text-primaria tracking-widest uppercase">
             Suporte e Dúvidas
           </span>
-          <h1 className="text-5xl lg:text-7xl font-serif text-[#004d3a] leading-tight font-medium">
+          <h1 className="text-5xl lg:text-7xl font-serif text-primariaEscura leading-tight font-medium">
             Perguntas Frequentes.
           </h1>
-          <p className="text-lg text-stone-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-textoSuave max-w-2xl mx-auto leading-relaxed">
             Tudo o que precisa de saber sobre a triagem inteligente, a segurança dos seus dados e o funcionamento do agendamento nas UBS.
           </p>
         </div>
       </section>
 
-      {/* 2. LISTA DE FAQ (Acordeão) */}
+
       <section className="py-20 px-6 lg:px-16 xl:px-24 max-w-4xl mx-auto">
         <div className="space-y-4">
           {faqData.map((faq, index) => {
@@ -65,16 +66,16 @@ export default function Faq() {
             return (
               <div 
                 key={index} 
-                className="border-b border-stone-200 overflow-hidden transition-all duration-300"
+                className="border-b border-borda overflow-hidden transition-all duration-300"
               >
                 <button
                   onClick={() => toggleFaq(index)}
                   className="w-full flex items-center justify-between py-6 text-left focus:outline-none group"
                 >
-                  <h3 className={`text-2xl font-serif pr-8 transition-colors ${isOpen ? 'text-[#148565]' : 'text-[#004d3a] group-hover:text-[#148565]'}`}>
+                  <h3 className={`text-2xl font-serif pr-8 transition-colors ${isOpen ? 'text-primaria' : 'text-primariaEscura group-hover:text-primaria'}`}>
                     {faq.pergunta}
                   </h3>
-                  <span className="text-[#004d3a] shrink-0 ml-4">
+                  <span className="text-primaria shrink-0 ml-4">
                     {isOpen ? (
                       <FiMinus className="w-6 h-6" />
                     ) : (
@@ -83,14 +84,14 @@ export default function Faq() {
                   </span>
                 </button>
                 
-                {/* Resposta expansível */}
+    
                 <div 
                   className={`grid transition-all duration-300 ease-in-out ${
                     isOpen ? 'grid-rows-[1fr] opacity-100 pb-8' : 'grid-rows-[0fr] opacity-0'
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="text-lg text-stone-600 leading-relaxed pr-12">
+                    <p className="text-lg text-textoSuave leading-relaxed pr-12">
                       {faq.resposta}
                     </p>
                   </div>
@@ -101,22 +102,22 @@ export default function Faq() {
         </div>
       </section>
 
-      {/* 3. CTA DE CONTACTO */}
+  
       <section className="px-6 pb-12 pt-8">
-        <div className="max-w-4xl mx-auto bg-[#e6f2ed] rounded-3xl p-10 sm:p-16 text-center space-y-6">
-          <div className="w-16 h-16 bg-white text-[#004d3a] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+        <div className="max-w-4xl mx-auto bg-mentaSuave rounded-3xl p-10 sm:p-16 text-center space-y-6">
+          <div className="w-16 h-16 bg-white text-primaria rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
             <FiMessageCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-3xl font-serif text-[#004d3a]">Ainda tem alguma dúvida?</h2>
-          <p className="text-stone-600 text-lg max-w-xl mx-auto">
-            A nossa equipa está disponível para ajudar a entender melhor o funcionamento do CitizenTech e a integração com o SUS.
+          <h2 className="text-3xl font-serif text-primariaEscura">Ainda tem alguma dúvida?</h2>
+          <p className="text-textoSuave text-lg max-w-xl mx-auto">
+            A nossa equipe está disponível para ajudar a entender melhor o funcionamento do CitizenTech e a integração com o SUS.
           </p>
           <div className="pt-6">
             <Link 
               to="/contato" 
-              className="inline-block bg-[#004d3a] text-white px-10 py-4 rounded-full font-medium hover:bg-[#003829] transition-colors shadow-lg"
+              className="inline-block bg-primaria text-white px-10 py-4 rounded-full font-medium hover:bg-primariaEscura transition-colors shadow-lg"
             >
-              Falar com a equipa
+              Falar com a equipe
             </Link>
           </div>
         </div>
