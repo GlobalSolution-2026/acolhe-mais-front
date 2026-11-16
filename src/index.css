@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Tokens do simulador (Tailwind v4: as cores ficam no bloco @theme, não existe tailwind.config).
- * Paleta do protótipo: azul-marinho + menta. Usar nas classes: bg-primaria, text-textoSuave, font-nunito...
- * As cores de gravidade são só para selos de gravidade, lista do dia e botão de Emergência.
- * As páginas institucionais continuam com o visual delas (não usam estes tokens).
+ * Tokens do site inteiro (Tailwind v4: as cores ficam no bloco @theme, não existe tailwind.config).
+ * Paleta do protótipo: azul-marinho + menta, usada nas páginas institucionais e no simulador.
+ * Usar nas classes: bg-primaria, text-textoSuave, font-nunito... (nada de cor em hexadecimal nas classes).
+ * As cores de gravidade são só para selos de gravidade, lista do dia, botão de Emergência
+ * e a faixa de emergência do topo do site.
  */
 @theme {
   --color-primaria: #1E3A5F;
@@ -30,9 +31,16 @@
 }
 
 @layer base {
+  /* Fonte Nunito e cores do tema em todo o site (o link da fonte está no index.html). */
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, sans-serif;
+    @apply bg-fundo text-texto font-nunito antialiased;
+  }
+
+  /* Rolagem suave para as âncoras (ex.: atalhos da Solução), só para quem não pediu menos movimento. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 }
 
