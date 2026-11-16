@@ -6,7 +6,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { conectarStore } from "../services/api";
 import { carregarFeriados } from "../lib/feriados";
-import { carregarPreferenciaSimulacao } from "../lib/relogio";
+import { agora, carregarPreferenciaSimulacao } from "../lib/relogio";
+import { entradaDoCidadao, listaDoDiaAberta, vincularEntradaSemLogin } from "../services/regrasAgendamento";
+import { finalizarOferta, vencerOfertas } from "../services/simulacao";
+import type { EntradaListaDoDia } from "../types";
 import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
 import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
@@ -95,6 +98,56 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     [alterarOrientacao],
   );
 
+  const definirCidadaoAtual = useCallback(
+    (idCidadao: number) =>
+      atualizarEstado((e) => ({
+        ...e,
+        idCidadaoAtual: idCidadao,
+        // Regra: a entrada na lista do dia feita sem login passa a ser desta conta.
+        listaDoDia: vincularEntradaSemLogin(e.listaDoDia, idCidadao, e.cidadaos.find((c) => c.idCidadao === idCidadao)?.nmCidadao),
+      })),
+    [atualizarEstado],
+  );
+
+  const sair = useCallback(() => atualizarEstado((e) => ({ ...e, idCidadaoAtual: null })), [atualizarEstado]);
+
+  /** Regras: a lista do dia só abre em dia útil e a mesma pessoa não entra duas vezes. */
+  const entrarNaListaDoDia = useCallback(
+    (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number) =>
+      atualizarEstado((e) => {
+        if (!listaDoDiaAberta(agora()) || entradaDoCidadao(e.listaDoDia, e.idCidadaoAtual)) return e;
+        const entrada: EntradaListaDoDia = {
+          idEntrada: Math.max(0, ...e.listaDoDia.map((x) => x.idEntrada)) + 1,
+          idUnidade,
+          idCidadao: e.idCidadaoAtual,
+          idOrientacao,
+          nmCidadao: e.cidadaos.find((c) => c.idCidadao === e.idCidadaoAtual)?.nmCidadao ?? "Você",
+          dsCor,
+          dtEntrada: agora().toISOString(),
+          flPrioridade: false,
+          flCidadao: true,
+          status: "AGUARDANDO",
+        };
+        return { ...e, listaDoDia: [...e.listaDoDia, entrada] };
+      }),
+    [atualizarEstado],
+  );
+
+  const responderOferta = useCallback(
+    (idOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA") =>
+      atualizarEstado((e) => finalizarOferta(e, idOferta, resposta, agora())),
+    [atualizarEstado],
+  );
+
+  // A cada segundo, vence as ofertas de vaga cujo prazo de 30 min (simulados) acabou e repassa a vaga.
+  useEffect(() => {
+    const relogio = setInterval(() => {
+      const novo = vencerOfertas(ref.current, agora());
+      if (novo !== ref.current) atualizarEstado(() => novo);
+    }, 1000);
+    return () => clearInterval(relogio);
+  }, [atualizarEstado]);
+
   // Liga os serviços a este estado enquanto o simulador estiver aberto.
   useEffect(() => {
     conectarStore({ obterEstado, atualizarEstado });
@@ -106,9 +159,11 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     () => ({
       estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
       iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
+      definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta,
     }),
     [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
-      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado],
+      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
+      definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta],
   );
 
   return <SimuladorContext.Provider value={valor}>{children}</SimuladorContext.Provider>;
