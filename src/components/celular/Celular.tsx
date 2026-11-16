@@ -41,9 +41,9 @@ export default function Celular() {
   const [parametros] = useSearchParams();
   const { estado } = useSimulador();
 
-  // No Agendar, o voltar leva aos horários da UBS do horário escolhido (?horario= na URL).
+  // No Agendar, o voltar leva aos horários da UBS escolhida (?ubs= na URL; sem ele, procura o horário no mock).
   const idHorario = Number(parametros.get('horario'));
-  const idUnidade = estado.horarios.find((h) => h.idHorario === idHorario)?.idUnidade;
+  const idUnidade = Number(parametros.get('ubs')) || estado.horarios.find((h) => h.idHorario === idHorario)?.idUnidade;
   const pai = rotaPai(pathname, idUnidade);
 
   // Contador do sino: pedidos de confirmação na janela + ofertas de vaga da lista do dia (só do cidadão logado).

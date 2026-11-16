@@ -13,7 +13,7 @@
  * - /simulador/cidadao: a aba mostra o celular; as telas do celular são rotas filhas dela
  *   (inicio, orientacao, resultado, emergencia, ubs, ubs/:idUnidade, entrar, criar-conta, agendar,
  *   sucesso, lista-do-dia, consultas, avisos, perfil, perfil/editar e perfil/ficha).
- *   ubs/:idUnidade é a rota com parâmetro (lido com useParams). Telas ainda não feitas mostram "Em construção".
+ *   ubs/:idUnidade é a rota com parâmetro (lido com useParams).
  * - path "*": qualquer URL que não existe mostra a página NaoEncontrada, mantendo Header e Footer.
  * - errorElement: se uma rota quebrar ao carregar, mostra a NaoEncontrada no lugar da tela de erro padrão.
  */
@@ -36,15 +36,23 @@ import Inicio from '../pages/simulador/cidadao/Inicio';
 import Emergencia from '../pages/simulador/cidadao/Emergencia';
 import Orientacao from '../pages/simulador/cidadao/Orientacao';
 import Resultado from '../pages/simulador/cidadao/Resultado';
-import TelaEmConstrucao from '../components/celular/TelaEmConstrucao';
+import Ubs from '../pages/simulador/cidadao/Ubs';
+import HorariosUbs from '../pages/simulador/cidadao/HorariosUbs';
+import Entrar from '../pages/simulador/cidadao/Entrar';
+import CriarConta from '../pages/simulador/cidadao/CriarConta';
+import Agendar from '../pages/simulador/cidadao/Agendar';
+import Sucesso from '../pages/simulador/cidadao/Sucesso';
+import ListaDoDia from '../pages/simulador/cidadao/ListaDoDia';
+import Consultas from '../pages/simulador/cidadao/Consultas';
+import Avisos from '../pages/simulador/cidadao/Avisos';
+import Perfil from '../pages/simulador/cidadao/Perfil';
+import EditarPerfil from '../pages/simulador/cidadao/EditarPerfil';
+import FichaSaude from '../pages/simulador/cidadao/FichaSaude';
 import { BASE_CELULAR } from '../services/navegacao';
 import AbaRecepcao from '../pages/simulador/recepcao/AbaRecepcao';
 import AbaStatus from '../pages/simulador/status/AbaStatus';
 import AbaIaRiscoFalta from '../pages/simulador/ia/AbaIaRiscoFalta';
 import AbaIaUrgencia from '../pages/simulador/ia/AbaIaUrgencia';
-
-/** Atalho para as telas do celular que ainda não foram feitas. */
-const emConstrucao = (titulo: string, bloco: string) => <TelaEmConstrucao titulo={titulo} previsao={bloco} />;
 
 export const router = createBrowserRouter([
   {
@@ -73,18 +81,18 @@ export const router = createBrowserRouter([
               { path: 'emergencia', element: <Emergencia /> },
               { path: 'orientacao', element: <Orientacao /> },
               { path: 'resultado', element: <Resultado /> },
-              { path: 'ubs', element: emConstrucao('UBS próximas', 'bloco 4') },
-              { path: 'ubs/:idUnidade', element: emConstrucao('Horários da UBS', 'bloco 4') },
-              { path: 'entrar', element: emConstrucao('Entrar', 'bloco 4') },
-              { path: 'criar-conta', element: emConstrucao('Criar conta', 'bloco 4') },
-              { path: 'agendar', element: emConstrucao('Agendar', 'bloco 4') },
-              { path: 'sucesso', element: emConstrucao('Consulta agendada', 'bloco 4') },
-              { path: 'lista-do-dia', element: emConstrucao('Lista do dia', 'bloco 4') },
-              { path: 'consultas', element: emConstrucao('Minhas consultas', 'bloco 4') },
-              { path: 'avisos', element: emConstrucao('Avisos', 'bloco 4') },
-              { path: 'perfil', element: emConstrucao('Perfil', 'bloco 4') },
-              { path: 'perfil/editar', element: emConstrucao('Editar perfil', 'bloco 4') },
-              { path: 'perfil/ficha', element: emConstrucao('Ficha de saúde', 'bloco 4') },
+              { path: 'ubs', element: <Ubs /> },
+              { path: 'ubs/:idUnidade', element: <HorariosUbs /> },
+              { path: 'entrar', element: <Entrar /> },
+              { path: 'criar-conta', element: <CriarConta /> },
+              { path: 'agendar', element: <Agendar /> },
+              { path: 'sucesso', element: <Sucesso /> },
+              { path: 'lista-do-dia', element: <ListaDoDia /> },
+              { path: 'consultas', element: <Consultas /> },
+              { path: 'avisos', element: <Avisos /> },
+              { path: 'perfil', element: <Perfil /> },
+              { path: 'perfil/editar', element: <EditarPerfil /> },
+              { path: 'perfil/ficha', element: <FichaSaude /> },
               // Tela que não existe no celular: volta para o Início (caminho absoluto; o relativo
               // seria resolvido a partir da URL errada e entraria em loop)
               { path: '*', element: <Navigate to={`${BASE_CELULAR}/inicio`} replace /> },
