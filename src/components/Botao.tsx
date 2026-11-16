@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+/** Propriedades do botão: conteúdo, ação de clique, tipo do <button>, variante visual e estado. */
 interface BotaoProps {
   children: ReactNode;
   acao?: () => void;
@@ -10,6 +11,11 @@ interface BotaoProps {
   className?: string;
 }
 
+/**
+ * Botão reutilizável do site.
+ * Variantes 'primario', 'secundario' e 'escuro' nas páginas institucionais;
+ * 'simulador' e 'simuladorContorno' dentro do simulador.
+ */
 export default function Botao({
   children,
   acao,
@@ -19,22 +25,18 @@ export default function Botao({
   className = '',
 }: BotaoProps) {
 
-  // Efeito de onda ajustado para um tom verde claro suave
-  const efeitoOnda =
-    "relative overflow-hidden after:content-[''] after:absolute after:inset-0 after:z-[1] after:pointer-events-none after:rounded-t-[45%] after:bg-[#00d186]/20 after:translate-y-full after:transition-transform after:duration-500 hover:after:translate-y-[10%] active:after:translate-y-[10%] focus-visible:after:translate-y-[10%] disabled:after:translate-y-full";
-
-  const base = `${efeitoOnda} px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 inline-flex items-center justify-center select-none active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer`;
+  // Páginas institucionais: tokens do @theme, altura mínima de 48 px e cantos de 12 px (seção 10).
+  const base =
+    'min-h-12 px-6 rounded-xl font-bold inline-flex items-center justify-center gap-2 transition-colors select-none cursor-pointer active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantes = {
-    primario:
-      'bg-[#004d3a] hover:bg-[#003829] text-white shadow-sm hover:shadow',
-    secundario:
-      'border-2 border-[#148565] hover:bg-[#148565] hover:text-white text-[#148565] bg-transparent transition-colors',
-    escuro: 'bg-[#1C1C1C] hover:bg-stone-800 text-white shadow-sm',
+    primario: 'bg-primaria hover:bg-primariaEscura text-branco shadow-leve',
+    secundario: 'border-2 border-primaria bg-transparent text-primaria hover:bg-mentaSuave',
+    escuro: 'bg-primariaEscura hover:bg-primaria text-branco shadow-leve',
   };
 
   // Simulador: botões com os tokens do @theme, altura mínima de 48 px, cantos de 12 px e sombra leve.
-  // Têm base própria para não misturar com o efeito de onda verde das páginas institucionais.
+  // Têm base própria (com font-nunito e sombra fixa) para não mudar o visual já testado do simulador.
   const baseSimulador =
     'min-h-12 px-5 rounded-xl font-bold font-nunito inline-flex items-center justify-center gap-2 shadow-leve transition-colors select-none cursor-pointer active:translate-y-px disabled:opacity-50 disabled:cursor-not-allowed';
 

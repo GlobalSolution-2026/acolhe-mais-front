@@ -1,59 +1,79 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
 
+/** Itens do menu principal, na ordem em que aparecem (computador e celular). */
+const ITENS_MENU = [
+  { rota: '/', nome: 'Início' },
+  { rota: '/sobre', nome: 'Sobre' },
+  { rota: '/solucao', nome: 'Solução' },
+  { rota: '/simulador', nome: 'Simulador' },
+  { rota: '/faq', nome: 'FAQ' },
+  { rota: '/contato', nome: 'Contato' },
+  { rota: '/integrantes', nome: 'Integrantes' },
+];
+
+/**
+ * Cabeçalho do site (opção A): faixa azul-marinho com a logo e o menu.
+ * O NavLink marca a página atual em branco, sublinhada em menta; as outras ficam em branco translúcido.
+ * No celular, o menu vira um botão (hambúrguer) que abre a lista logo abaixo do cabeçalho.
+ */
 export default function Header() {
   const [menuAberto, setMenuAberto] = useState(false);
 
+  /** Fecha o menu do celular depois de escolher uma página. */
   const fecharMenu = () => setMenuAberto(false);
 
+  /** Classe do link do computador: destaca a página atual. */
+  const classeLink = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? 'text-branco underline decoration-menta decoration-4 underline-offset-8'
+      : 'text-branco/75 transition-colors hover:text-branco';
+
+  /** Classe do link do celular: linha inteira clicável, com no mínimo 48 px de altura. */
+  const classeLinkCelular = ({ isActive }: { isActive: boolean }) =>
+    `flex min-h-12 items-center rounded-xl px-3 font-semibold ${
+      isActive ? 'bg-branco/10 text-branco' : 'text-branco/75 hover:bg-branco/10 hover:text-branco'
+    }`;
+
   return (
-    <header className="absolute top-0 left-0 right-0 z-50 bg-transparent py-4 px-4 sm:px-6 lg:px-8">
-
-      <div className="max-w-7xl mx-auto flex justify-between items-center bg-white/90 backdrop-blur-md border border-borda px-4 sm:px-6 py-3 rounded-full shadow-sm gap-2">
-        
-
-        <Link to="/" onClick={fecharMenu} className="text-xl sm:text-2xl font-serif font-bold text-primaria tracking-wide shrink-0">
+    <header className="bg-primaria">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 lg:px-6">
+        <Link to="/" onClick={fecharMenu} className="text-2xl font-extrabold text-branco">
           Acolhe<span className="text-menta">+</span>
         </Link>
 
-   
-        <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm text-textoSuave font-medium">
-          <Link to="/" className="hover:text-primaria transition-colors">Home</Link>
-          <Link to="/sobre" className="hover:text-primaria transition-colors">Sobre</Link>
-          <Link to="/solucao" className="hover:text-primaria transition-colors">Solução</Link>
-          <Link to="/simulador" className="hover:text-primaria transition-colors">Simulador</Link>
-          <Link to="/faq" className="hover:text-primaria transition-colors">FAQ</Link>
-          <Link to="/contato" className="hover:text-primaria transition-colors">Contato</Link>
-          <Link to="/integrantes" className="hover:text-primaria transition-colors">Integrantes</Link>
+        <nav aria-label="Menu principal" className="hidden items-center gap-6 font-semibold lg:flex">
+          {ITENS_MENU.map(({ rota, nome }) => (
+            // "end" no Início: sem ele, "/" ficaria marcado em todas as páginas
+            <NavLink key={rota} to={rota} end={rota === '/'} className={classeLink}>
+              {nome}
+            </NavLink>
+          ))}
         </nav>
 
-
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <button 
-            onClick={() => setMenuAberto(!menuAberto)}
-            aria-label="Abrir menu de navegação"
-          
-            className="lg:hidden p-2 text-primaria hover:bg-fundo rounded-full transition-colors focus:outline-none"
-          >
-            {menuAberto ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-          </button>
-        </div>
-
+        <button
+          type="button"
+          onClick={() => setMenuAberto(!menuAberto)}
+          aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
+          aria-expanded={menuAberto}
+          aria-controls="menu-celular"
+          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl border border-branco/30 text-branco lg:hidden"
+        >
+          {menuAberto ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
+        </button>
       </div>
 
-
       {menuAberto && (
-    
-        <div className="lg:hidden absolute top-20 left-4 right-4 bg-white/95 backdrop-blur-lg border border-borda rounded-3xl p-6 shadow-xl flex flex-col gap-4 text-center animate-fade-in z-50">
-          <Link to="/" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">Home</Link>
-          <Link to="/sobre" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">Sobre</Link>
-          <Link to="/solucao" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">Solução</Link>
-          <Link to="/simulador" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">Simulador</Link>
-          <Link to="/faq" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">FAQ</Link>
-          <Link to="/contato" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors border-b border-borda">Contato</Link>
-          <Link to="/integrantes" onClick={fecharMenu} className="text-texto font-medium py-2 hover:text-primaria transition-colors">Integrantes</Link>
-        </div>
+        <nav id="menu-celular" aria-label="Menu principal" className="border-t border-branco/15 lg:hidden">
+          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+            {ITENS_MENU.map(({ rota, nome }) => (
+              <NavLink key={rota} to={rota} end={rota === '/'} onClick={fecharMenu} className={classeLinkCelular}>
+                {nome}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
       )}
     </header>
   );
