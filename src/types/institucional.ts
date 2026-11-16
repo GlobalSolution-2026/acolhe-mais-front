@@ -21,3 +21,30 @@ export interface CartaoTexto {
 
 /** Passo de uma sequência numerada (o número vem da posição na lista). */
 export type PassoNumerado = CartaoTexto;
+
+/** Número sem fonte própria (a fonte fica na lista geral da página). */
+export type NumeroSimples = Pick<NumeroDestaque, 'valor' | 'texto'>;
+
+/** Serviço da rede do SUS (ex.: UBS, "Porta de entrada"). */
+export interface ServicoSus extends CartaoTexto {
+  /** Nível de atendimento, mostrado acima do nome. */
+  nivel: string;
+}
+
+/** Uma das duas pontas do problema (urgência lotada e faltas na UBS). */
+export interface PontaProblema extends CartaoTexto {
+  /** Rótulo pequeno acima do título (ex.: "Ponta 1 · Na urgência"). */
+  rotulo: string;
+  numeros: NumeroSimples[];
+}
+
+/** Alternativa já existente, comparada com o Acolhe+ (Tabela 6 do documento). */
+export interface Alternativa {
+  nome: string;
+  /** Quem oferece (ex.: "Prefeitura de SP"). */
+  origem: string;
+  /** O que a alternativa faz. */
+  faz: string;
+  /** O que falta para resolver o problema do Acolhe+. */
+  falta: string;
+}
