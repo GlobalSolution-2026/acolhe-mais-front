@@ -108,3 +108,20 @@ export interface GrupoFaq {
   titulo: string;
   perguntas: PerguntaFaq[];
 }
+
+/** Dados do formulário de Contato (react-hook-form). */
+export interface DadosContato {
+  nome: string;
+  email: string;
+  /** Um dos assuntos de ASSUNTOS_CONTATO ("" enquanto nada foi escolhido). */
+  assunto: string;
+  mensagem: string;
+}
+
+/** Canal de contato mostrado em cartão (e-mail, telefone, endereço). */
+export interface CanalContato {
+  rotulo: string;
+  valor: string;
+  /** Linha menor abaixo do valor (ex.: horário de atendimento). */
+  detalhe: string;
+}
