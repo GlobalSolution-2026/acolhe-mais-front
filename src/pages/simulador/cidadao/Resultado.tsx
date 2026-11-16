@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiAlertCircle, FiCalendar, FiExternalLink, FiHash, FiInfo, FiMapPin, FiPhone, FiPhoneCall } from 'react-icons/fi';
 import EstadoVazio from '../../../components/EstadoVazio';
+import LegendaCores from '../../../components/LegendaCores';
 import Loading from '../../../components/Loading';
 import MensagemErro from '../../../components/MensagemErro';
 import SeloGravidade from '../../../components/SeloGravidade';
@@ -285,6 +286,7 @@ export default function Resultado() {
   return (
     <div className="flex flex-col gap-4">
       <SeloGravidade cor={res.dsCor} />
+      <LegendaCores destaque={res.dsCor} />
       {res.dsCor === 'VERMELHO' && <Vermelho atual={atual} res={res} />}
       {res.dsCor === 'LARANJA' && <Laranja res={res} />}
       {res.dsCor === 'AMARELO' && <Amarelo atual={atual} res={res} />}

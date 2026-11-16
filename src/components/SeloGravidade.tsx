@@ -1,16 +1,5 @@
+import { CORES } from '../data/cores';
 import type { Cor } from '../types/orientacao';
-
-/**
- * Cor de fundo, cor do texto e nome de cada gravidade.
- * Regra de acessibilidade: o selo sempre mostra o nome além da cor; no amarelo o texto é escuro.
- */
-const ESTILO: Record<Cor, { classe: string; nome: string }> = {
-  VERMELHO: { classe: 'bg-gravidade-vermelho text-branco', nome: 'Vermelho – SAMU' },
-  LARANJA: { classe: 'bg-gravidade-laranja text-branco', nome: 'Laranja – Pronto-socorro' },
-  AMARELO: { classe: 'bg-gravidade-amarelo text-texto', nome: 'Amarelo – UPA' },
-  VERDE: { classe: 'bg-gravidade-verde text-branco', nome: 'Verde – UBS' },
-  AZUL: { classe: 'bg-gravidade-azul text-branco', nome: 'Azul – UBS' },
-};
 
 interface SeloGravidadeProps {
   cor: Cor;
@@ -18,13 +7,24 @@ interface SeloGravidadeProps {
   tamanho?: 'grande' | 'pequeno';
 }
 
-/** Selo com a cor e o destino da orientação (ex.: "Amarelo – UPA"). */
+/**
+ * Selo com o número do nível, a cor e o destino da orientação (ex.: "3 Amarelo – UPA").
+ * Acessibilidade (WCAG 1.4.1): a cor nunca aparece sozinha. O número fica num círculo branco com texto escuro,
+ * e o leitor de tela lê "Nível X:" antes do nome. No amarelo o texto é escuro, para ter contraste.
+ */
 export default function SeloGravidade({ cor, tamanho = 'grande' }: SeloGravidadeProps) {
-  const estilo = ESTILO[cor];
-  const medidas = tamanho === 'grande' ? 'rounded-xl px-4 py-3 text-xl' : 'rounded-full px-3 py-0.5 text-sm';
+  const dados = CORES[cor];
+  const grande = tamanho === 'grande';
+  const medidas = grande ? 'gap-3 rounded-xl px-4 py-3 text-xl' : 'gap-1.5 rounded-full py-0.5 pl-1 pr-3 text-sm';
+  const circulo = grande ? 'h-8 w-8 text-base' : 'h-5 w-5 text-xs';
   return (
-    <span className={`inline-block text-center font-extrabold shadow-leve ${medidas} ${estilo.classe}`}>
-      {estilo.nome}
+    <span className={`inline-flex items-center justify-center text-center font-extrabold shadow-leve ${medidas} ${dados.classe}`}>
+      <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded-full bg-branco text-texto ${circulo}`}>
+        {dados.nrNivel}
+      </span>
+      <span className="sr-only">Nível {dados.nrNivel}:</span>
+      {/* O nome fica sozinho num span, para continuar sendo encontrado pelo texto exato (ex.: "Amarelo – UPA"). */}
+      <span>{dados.nmSelo}</span>
     </span>
   );
 }
