@@ -34,7 +34,8 @@ export default function QueixaGirando({ queixas, intervalo = 2500 }: QueixaGiran
   return (
     <>
       <span className="sr-only">{listaCompleta}</span>
-      <span aria-hidden="true" className="relative mt-2 block h-[1.3em] overflow-hidden">
+      {/* 1.4em: altura de uma linha mais o fundo menta, sem cortar a parte de baixo */}
+      <span aria-hidden="true" className="relative mt-2 block h-[1.4em] overflow-hidden">
         {queixas.map((queixa, i) => (
           <span
             key={queixa}
