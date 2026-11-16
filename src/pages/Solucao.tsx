@@ -1,177 +1,292 @@
-import { Link } from 'react-router-dom';
-import { FiUser, FiHome, FiArrowRight } from 'react-icons/fi';
+/**
+ * Página: Solução (rota "/solucao", página da solução)
+ * Explica como o Acolhe+ funciona: orientação, agendamento e lista do dia, confirmação,
+ * impacto esperado (hipóteses e indicadores), tecnologia, modelo de negócio e limites.
+ * Veio da demonstração aprovada 03-solucao.html, com a seção "Impacto esperado" dentro da página.
+ * Endpoints: nenhum (textos fixos de src/data/solucao.ts e cores de src/data/cores.ts).
+ * Estados: não chama API, então não tem carregando, erro ou vazio.
+ */
+import AtalhosPagina from '../components/AtalhosPagina';
+import Etiqueta from '../components/Etiqueta';
+import LinkBotao from '../components/LinkBotao';
+import ListaIndicadores from '../components/ListaIndicadores';
+import ResultadoCores from '../components/ResultadoCores';
+import {
+  ATALHOS_SOLUCAO,
+  BENEFICIOS,
+  CAMADAS,
+  ETAPAS_LISTA_DO_DIA,
+  ETIQUETAS_NEGOCIO,
+  INDICADORES,
+  LIMITES,
+  MEDICAO,
+  MODELO_NEGOCIO,
+  PASSOS_SOLUCAO,
+  PRAZOS_CONFIRMACAO,
+  REGRAS_CONFIRMACAO,
+  RESULTADOS_COR,
+} from '../data/solucao';
 
+/** Classe do título das seções numeradas. */
+const TITULO_SECAO = 'text-2xl font-extrabold text-primaria sm:text-3xl';
+
+/** Letras das etapas da lista do dia (a, b, c, d). */
+const LETRAS = 'abcdefgh';
+
+/**
+ * Página Solução. Único caminho para o simulador: o botão "Ver no simulador", no fim.
+ * As seções com id recebem scroll-mt-6 para o título não ficar colado no topo ao usar os atalhos.
+ */
 export default function Solucao() {
   return (
-    <div className="min-h-screen bg-fundo font-sans text-texto animate-fade-in">
-      
-  
-      <section className="relative pt-40 pb-20 lg:pt-48 lg:pb-32 bg-fundo overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 lg:px-16 w-full flex flex-col items-center text-center relative z-10">
-          <span className="text-sm font-bold text-primaria tracking-widest uppercase mb-6 block bg-mentaSuave px-4 py-1.5 rounded-full">
-            A Nossa Arquitetura
-          </span>
-          
-         <h1 className="text-5xl md:text-6xl lg:text-7xl text-primaria max-w-4xl leading-[1.1] mb-6 font-serif">
-            O ecossistema de saúde <br className="hidden sm:block" />
-            pública <span className="italic font-light text-menta">integrado</span>
+    <>
+      {/* Abertura com os atalhos para as seções */}
+      <section className="bg-branco">
+        <div className="mx-auto flex max-w-6xl flex-col px-4 py-14 lg:px-6 lg:py-20">
+          <Etiqueta>A solução</Etiqueta>
+          <h1 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight text-primaria sm:text-5xl">
+            Como o Acolhe+ funciona
           </h1>
-          
-          <p className="text-lg text-textoSuave max-w-2xl mb-10 leading-relaxed font-light">
-            Atendimento direcionado e gestão inteligente de vagas ociosas para todos os cidadãos, reduzindo as filas e a incerteza no SUS.
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-texto">
+            Uma plataforma com duas frentes: o aplicativo do cidadão, que orienta e agenda, e o painel da recepção da
+            UBS, que confirma as consultas e oferece as vagas liberadas.
           </p>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link 
-              to="/simulador" 
-              className="bg-primaria text-branco px-8 py-3.5 rounded-xl font-bold hover:bg-primariaEscura transition-colors shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)]"
-            >
-              Explorar a triagem
-            </Link>
-            <Link 
-              to="/sobre" 
-              className="border border-borda text-textoSuave px-8 py-3.5 rounded-xl font-medium hover:bg-branco hover:border-primaria transition-colors"
-            >
-              Conhecer o contexto
-            </Link>
-          </div>
+          <AtalhosPagina atalhos={ATALHOS_SOLUCAO} />
         </div>
       </section>
 
-    
-      <section className="bg-primaria pt-24 pb-24 px-6 lg:px-16 border-t border-menta/20">
-        <div className="text-center max-w-4xl mx-auto mb-16">
-          <h2 className="text-4xl md:text-5xl text-branco leading-tight font-serif">
-            Uma abordagem tecnológica<br />
-            <span className="italic font-light text-menta">e comprovada</span>
-          </h2>
-          <p className="text-mentaSuave/80 mt-4 text-lg">Com a confiança de diretrizes clínicas para otimizar os resultados.</p>
-        </div>
+      {/* 1. Orientação: do sintoma ao serviço certo */}
+      <section id="orientacao" className="scroll-mt-6 border-y border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>1. Orientação: do sintoma ao serviço certo</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            A orientação é feita sem login. A lógica é inspirada no Sistema Manchester, que liga cada nível de gravidade
+            a uma cor.
+          </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          <div className="b>g-[#152a45] border border-menta/20 p-8 rounded-3xl flex flex-col justify-between shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] hover:border-menta/50 transition-all">
-            <div>
-              <h3 className="text-xl font-serif text-branco mb-3 leading-tight">Triagem<br/>Baseada em Dados</h3>
-              <p className="text-fundo/80 text-sm leading-relaxed">Direciona urgências e emergências instantaneamente.</p>
-            </div>
-          </div>
-
-          <div className="bg-primariaEscura border border-menta/20 p-8 rounded-3xl flex flex-col justify-between shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] hover:border-menta/50 transition-all">
-            <div>
-              <h3 className="text-xl font-serif text-branco mb-3 leading-tight">Agendamento<br/>Inteligente (UBS)</h3>
-              <p className="text-fundo/80 text-sm leading-relaxed">Integração com vagas que seriam perdidas.</p>
-            </div>
-          </div>
-
-          <div className="bg-primariaEscura border border-menta/20 p-8 rounded-3xl flex flex-col justify-between shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] hover:border-menta/50 transition-all">
-            <div>
-              <h3 className="text-xl font-serif text-branco mb-3 leading-tight">Previsão de<br/>Faltas com IA</h3>
-              <p className="text-fundo/80 text-sm leading-relaxed">Modelos de machine learning estimam o risco de ausência.</p>
-            </div>
-          </div>
-
-          <div className="bg-primariaEscura border border-menta/20 p-8 rounded-3xl flex flex-col justify-between shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] hover:border-menta/50 transition-all">
-            <div>
-              <h3 className="text-xl font-serif text-branco mb-3 leading-tight">Fila de Espera<br/>Dinâmica</h3>
-              <p className="text-fundo/80 text-sm leading-relaxed">Oferta imediata de vagas libertadas à lista do dia.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      
-
-      <section className="bg-fundo pt-24 pb-12 px-6 lg:px-16">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* Bloco do Cidadão */}
-          <div className="bg-branco p-10 rounded-3xl border border-borda shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] flex flex-col justify-between">
-            <div>
-              <div className="w-14 h-14 bg-mentaSuave text-primaria rounded-2xl flex items-center justify-center mb-6 text-2xl shadow-sm">
-                <FiUser size={26} />
-              </div>
-              <h2 className="text-2xl font-serif text-primaria mb-2">Para o Cidadão</h2>
-              <h3 className="text-sm font-bold text-textoSuave uppercase tracking-wider mb-6">Triagem e Acesso</h3>
-              
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <p className="text-textoSuave text-sm"><strong className="text-texto">O Problema:</strong> Mais de 65% dos pacientes nas UPAs são casos de baixa gravidade (Azul/Verde) que deveriam estar na UBS.</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <p className="text-textoSuave text-sm"><strong className="text-texto">A Solução:</strong> Orientação baseada em sintomas e agendamento direto nos horários disponíveis da Atenção Básica.</p>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-         
-          <div className="bg-primaria p-10 rounded-3xl shadow-[0_30px_60px_-20px_rgba(21,42,69,0.45)] flex flex-col justify-between text-branco">
-            <div>
-              <div className="w-14 h-14 bg-primariaEscura text-menta rounded-2xl flex items-center justify-center mb-6 text-2xl shadow-sm border border-menta/20">
-                <FiHome size={26} />
-              </div>
-              <h2 className="text-2xl font-serif text-branco mb-2">Para a UBS</h2>
-              <h3 className="text-sm font-bold text-menta/80 uppercase tracking-wider mb-6">Gestão de Faltas</h3>
-              
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <p className="text-fundo/90 text-sm"><strong className="text-branco">O Problema:</strong> Taxas de absenteísmo (faltas sem aviso) chegam a 30%, deixando médicos ociosos enquanto as filas crescem.</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <p className="text-fundo/90 text-sm"><strong className="text-branco">A Solução:</strong> IA que calcula o risco de falta e um painel que redistribui vagas canceladas em tempo real para a "fila do dia".</p>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-     
-      <section className="bg-fundo pb-24 px-6 lg:px-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-mentaSuave rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center gap-12 border border-menta/40">
-            
-            <div className="md:w-1/2">
-              <span className="text-primaria font-bold tracking-wider uppercase text-sm mb-2 block">
-                Viabilidade Financeira
+          <ol className="mt-8 grid gap-4 lg:grid-cols-[1fr_1fr_1.3fr] lg:items-stretch">
+            {PASSOS_SOLUCAO.map(({ titulo, texto }, i) => (
+              <li key={titulo} className="rounded-2xl border border-borda bg-branco p-6 shadow-leve">
+                <span
+                  aria-hidden="true"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-menta font-extrabold text-primariaEscura"
+                >
+                  {i + 1}
+                </span>
+                <h3 className="mt-3 text-lg font-bold text-primaria">{titulo}</h3>
+                <p className="mt-1 text-texto">{texto}</p>
+              </li>
+            ))}
+            <li className="rounded-2xl border border-borda bg-branco p-6 shadow-leve">
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-menta font-extrabold text-primariaEscura"
+              >
+                {PASSOS_SOLUCAO.length + 1}
               </span>
-              <h2 className="text-3xl font-serif text-primaria mb-4">
-                O Retorno sobre o Investimento (ROI)
-              </h2>
-              <p className="text-textoSuave leading-relaxed">
-                Otimizar a agenda não é apenas organização, é eficiência pública. A redução de faltas se traduz diretamente em milhares de novos atendimentos mensais sem aumentar o custo da máquina pública.
+              <h3 className="mt-3 text-lg font-bold text-primaria">Resultado</h3>
+              <ResultadoCores resultados={RESULTADOS_COR} />
+            </li>
+          </ol>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {/* Regra: a emergência não passa pelo questionário nem pede login. */}
+            <div className="rounded-2xl border-2 border-gravidade-vermelho bg-branco p-6">
+              <h3 className="text-lg font-bold text-gravidade-vermelho">Caminho direto de emergência</h3>
+              <p className="mt-1 text-texto">
+                Em qualquer tela, sem questionário: SAMU 192 com o roteiro da ligação e Disque-Intoxicação (0800 722
+                6001), gratuito e 24 horas.
               </p>
             </div>
-
-            <div className="md:w-1/2 w-full">
-              <div className="bg-branco rounded-3xl p-8 shadow-[0_2px_10px_-2px_rgba(30,58,95,0.12)] border border-borda relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-2 h-full bg-menta"></div>
-                
-                <p className="text-textoSuave text-xs font-bold uppercase tracking-wider mb-1">Impacto Projetado (24 Meses)</p>
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-4xl md:text-5xl font-serif font-bold text-primaria">R$ 1.000.000</span>
-                </div>
-                
-                <p className="text-textoSuave text-sm leading-relaxed mb-6">
-                  Economia gerada pela redução de <strong className="text-texto">apenas 2% ao mês</strong> no absenteísmo da Atenção Primária.
-                </p>
-                
-                <div className="pt-4 border-t border-borda flex justify-end">
-                  <Link 
-                    to="/simulador" 
-                    className="bg-primaria text-branco px-6 py-2 rounded-xl text-sm font-bold hover:bg-primariaEscura transition-colors flex items-center gap-2"
-                  >
-                    Ir para o Simulador <FiArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
+            <div className="rounded-2xl border border-borda bg-branco p-6">
+              <h3 className="text-lg font-bold text-primaria">Prefere ir à UBS?</h3>
+              <p className="mt-1 text-texto">
+                A pessoa recebe um código válido no mesmo dia. Na recepção, a orientação é recuperada sem refazer as
+                perguntas.
+              </p>
             </div>
-
           </div>
         </div>
       </section>
 
-    </div>
+      {/* 2. Agendamento e lista do dia */}
+      <section id="vagas" className="scroll-mt-6 bg-branco">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 lg:grid-cols-2 lg:px-6">
+          <div className="flex flex-col gap-4">
+            <h2 className={TITULO_SECAO}>2. Agendamento e lista do dia</h2>
+            <p className="text-texto">
+              Nos casos verdes e azuis, a pessoa vê os horários livres nas UBS próximas, inclusive os liberados por
+              cancelamento ou falta de confirmação. O login com Cartão SUS (CNS) e senha só é pedido nesse momento.
+            </p>
+            <p className="text-texto">
+              Sem horário livre, ela entra na <strong>lista do dia</strong> de uma UBS próxima. A lista funciona só nos
+              dias úteis e segue a cor da orientação (verde antes de azul) e a ordem de chegada.
+            </p>
+          </div>
+          <ol className="flex flex-col gap-3">
+            {ETAPAS_LISTA_DO_DIA.map((etapa, i) => {
+              // A última etapa (prioridade no dia seguinte) fica em destaque.
+              const ultima = i === ETAPAS_LISTA_DO_DIA.length - 1;
+              return (
+                <li
+                  key={etapa}
+                  className={`flex gap-4 rounded-2xl p-4 ${ultima ? 'border-2 border-menta bg-mentaSuave' : 'border border-borda bg-fundo'}`}
+                >
+                  <span aria-hidden="true" className="font-extrabold text-primaria">
+                    {LETRAS[i]}
+                  </span>
+                  <p className="text-texto">{etapa}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
+
+      {/* 3. Confirmação e liberação de horários */}
+      <section id="confirmacao" className="scroll-mt-6 bg-mentaSuave">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>3. Confirmação e liberação de horários</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            Depois do agendamento, um modelo de aprendizado de máquina estima o risco de falta. Esse risco só antecipa a
+            confirmação: ele nunca tira a vaga de ninguém.
+          </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {PRAZOS_CONFIRMACAO.map(({ rotulo, valor, texto }) => (
+              <div key={rotulo} className="rounded-2xl bg-branco p-6 shadow-leve">
+                <p className="text-sm font-bold text-textoSuave">{rotulo}</p>
+                <p className="mt-1 text-2xl font-extrabold text-primaria">{valor}</p>
+                <p className="mt-1 text-texto">{texto}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="mt-6 grid gap-3 text-texto md:grid-cols-3">
+            {REGRAS_CONFIRMACAO.map((regra) => (
+              <li key={regra} className="rounded-2xl bg-branco/60 p-4">
+                {regra}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Sem celular também funciona (atendimento no balcão da recepção) */}
+      <section className="bg-branco">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <div className="grid gap-6 rounded-3xl bg-primaria p-8 text-branco md:grid-cols-[1fr_2fr] md:items-center">
+            <h2 className="text-2xl font-extrabold">Sem celular também funciona</h2>
+            <p className="text-branco/90">
+              A recepção da UBS faz a orientação, o cadastro (sem senha e sem exigir telefone), o agendamento e as
+              ofertas de vaga no balcão. A cada agendamento, o telefone é conferido e é possível cadastrar um contato de
+              recado.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Impacto esperado (hipóteses) e como será medido */}
+      <section id="impacto" className="scroll-mt-6 bg-mentaSuave">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>4. Impacto esperado</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            Os benefícios abaixo são hipóteses. Eles só podem ser confirmados com um teste piloto, comparando os
+            indicadores antes e depois da implantação.
+          </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {BENEFICIOS.map(({ titulo, itens }) => (
+              <div key={titulo} className="rounded-2xl bg-branco p-6 shadow-leve">
+                <h3 className="text-lg font-bold text-primaria">{titulo}</h3>
+                <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-texto">
+                  {itens.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 max-w-3xl text-sm text-textoSuave">
+            Experiências de confirmação e redistribuição de vagas mostram ganhos modestos, mas mensuráveis: em uma
+            unidade de São Paulo, o absenteísmo caiu 2 pontos percentuais.
+          </p>
+
+          <h3 className="mt-10 text-xl font-bold text-primaria">Como o impacto será medido</h3>
+          <ListaIndicadores indicadores={INDICADORES} />
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {MEDICAO.map(({ rotulo, texto }) => (
+              <div key={rotulo} className="rounded-2xl border-2 border-primaria bg-branco p-5">
+                <p className="font-bold text-primaria">{rotulo}</p>
+                <p className="mt-1 text-texto">{texto}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Tecnologia (camadas da Tabela 5) */}
+      <section id="tecnologia" className="scroll-mt-6 border-y border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>5. Tecnologia</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            Quatro camadas, com as tecnologias trabalhadas nas disciplinas do curso, e uma aplicação à parte para testar
+            a rotina da recepção.
+          </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {CAMADAS.map(({ rotulo, valor, texto }) => (
+              <div key={rotulo} className="rounded-2xl border border-borda bg-branco p-6">
+                <p className="text-sm font-bold text-textoSuave">{rotulo}</p>
+                <p className="mt-1 font-bold text-primaria">{valor}</p>
+                <p className="mt-2 text-texto">{texto}</p>
+              </div>
+            ))}
+            <div className="rounded-2xl border-2 border-menta bg-mentaSuave p-6">
+              <p className="text-sm font-bold text-primaria">Indicadores no painel</p>
+              <p className="mt-2 text-texto">
+                Taxa de absenteísmo, reaproveitamento de horários, comparecimento após orientação e pessoas não
+                encaixadas, por UBS.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Modelo de negócio (B2G) */}
+      <section id="negocio" className="scroll-mt-6 bg-branco">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>6. Modelo de negócio</h2>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {MODELO_NEGOCIO.map(({ rotulo, texto }) => (
+              <div key={rotulo} className="rounded-2xl border border-borda p-6">
+                <p className="text-sm font-bold text-textoSuave">{rotulo}</p>
+                <p className="mt-2 text-texto">{texto}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="mt-4 flex flex-wrap gap-2 text-sm font-bold">
+            {ETIQUETAS_NEGOCIO.map((etiqueta) => (
+              <li key={etiqueta} className="rounded-full bg-mentaSuave px-3 py-1 text-primaria">
+                {etiqueta}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* 7. O que o Acolhe+ não faz */}
+      <section id="limites" className="scroll-mt-6 border-t border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className={TITULO_SECAO}>7. O que o Acolhe+ não faz</h2>
+          <ul className="mt-6 grid gap-3 md:grid-cols-2">
+            {LIMITES.map(({ destaque, texto }) => (
+              <li key={destaque} className="rounded-2xl border border-borda bg-branco p-5 text-texto">
+                <strong className="text-primaria">{destaque}</strong> {texto}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8">
+            <LinkBotao para="/simulador">Ver no simulador</LinkBotao>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
