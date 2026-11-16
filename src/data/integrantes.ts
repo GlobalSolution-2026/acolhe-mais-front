@@ -69,7 +69,7 @@ export const INTEGRANTES: Integrante[] = [
   },
   {
     rm: '568780',
-    nome: 'Nicolas Frazão Viera Molina',
+    nome: 'Nicolas Frazão Vieira Molina',
     funcao: 'Inteligência artificial',
     turma: '1TDSPO',
     disciplinas: ['IA'],
