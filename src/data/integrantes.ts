@@ -1,8 +1,8 @@
 /**
  * Dados dos integrantes do grupo (decisoes-front.md, seção 7, e demonstração 06-integrantes.html).
- * Fotos: ainda não enviadas. Quando chegarem, salvar em public/integrantes/<RM>.jpg
- * (quadradas, ~400 × 400 px, até ~150 KB) e preencher o campo foto (ex.: '/integrantes/570281.jpg').
- * Links do GitHub e do LinkedIn: os mesmos da develop, até o grupo enviar os definitivos.
+ * Fotos: arquivos em public/integrantes/<RM>.jpeg, referenciados no campo foto.
+ * Sem foto, ou se a imagem não carregar, o AvatarIntegrante mostra as iniciais.
+ * RMs, turmas e links: lista enviada pelo grupo (os RMs batem com os nomes das fotos).
  */
 import type { Integrante } from '../types/institucional';
 
@@ -27,11 +27,12 @@ export const INTEGRANTES: Integrante[] = [
           'Modelo de aprendizado de máquina que estima a chance de o paciente faltar e antecipa a confirmação (risco alto a partir de 0,60).',
       },
     ],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
+    github: 'https://github.com/anabautzer',
+    linkedin: 'https://www.linkedin.com/in/ana-bautzer/',
+    foto: '/integrantes/570281.jpeg',
   },
   {
-    rm: '570412',
+    rm: '570451',
     nome: 'Cauã Mathias Bertini',
     funcao: 'Back-end (Python)',
     turma: '1TDSPI',
@@ -44,11 +45,12 @@ export const INTEGRANTES: Integrante[] = [
       },
       { titulo: 'Persistência', texto: 'Gravação e leitura dos dados em arquivo.' },
     ],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
+    github: 'https://github.com/cauabertini',
+    linkedin: 'https://www.linkedin.com/in/caua-mathias-bertini/',
+    foto: '/integrantes/570451.jpeg',
   },
   {
-    rm: '573178',
+    rm: '570412',
     nome: 'Eduardo Lima de Souza',
     funcao: 'Front-end',
     turma: '1TDSPI',
@@ -62,13 +64,14 @@ export const INTEGRANTES: Integrante[] = [
       { titulo: 'Publicação', texto: 'Deploy do front na Vercel.' },
     ],
     github: 'https://github.com/duduutech',
-    linkedin: 'https://linkedin.com',
+    linkedin: 'https://www.linkedin.com/in/duduutech/',
+    foto: '/integrantes/570412.jpeg',
   },
   {
-    rm: '571016',
+    rm: '568780',
     nome: 'Nicolas Frazão Viera Molina',
     funcao: 'Inteligência artificial',
-    turma: '1TDSPO',
+    turma: '1TDSPI',
     disciplinas: ['IA'],
     contribuicoes: [
       {
@@ -78,16 +81,17 @@ export const INTEGRANTES: Integrante[] = [
       },
       { titulo: 'API de IA', texto: 'Disponibilização dos modelos por uma API em Flask.' },
     ],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
+    github: 'https://github.com/Frazaomol',
+    linkedin: 'https://www.linkedin.com/in/nicolas-molina-3a9257355/',
+    foto: '/integrantes/568780.jpeg',
   },
   {
-    rm: '572860',
+    rm: '573178',
     nome: 'Nicolas Rodrigues Martins',
     // "NM" já é do Nicolas Molina; aqui usa nome e segundo nome, como na demonstração.
     iniciais: 'NR',
     funcao: 'Back-end (Java)',
-    turma: '1TDSPW',
+    turma: '1TDSPI',
     disciplinas: ['Java'],
     contribuicoes: [
       {
@@ -96,7 +100,8 @@ export const INTEGRANTES: Integrante[] = [
       },
       { titulo: 'Publicação', texto: 'API em Docker no Render, consumida pelo front.' },
     ],
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
+    github: 'https://github.com/NickRM22',
+    linkedin: 'https://www.linkedin.com/in/nicolas-rodrigues-martins-126607360/',
+    foto: '/integrantes/573178.jpeg',
   },
 ];

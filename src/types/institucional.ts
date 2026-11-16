@@ -143,7 +143,7 @@ export interface Integrante {
   contribuicoes: Contribuicao[];
   github: string;
   linkedin: string;
-  /** Caminho da foto em public/ (ex.: "/integrantes/570281.jpg"). Sem foto, aparecem as iniciais. */
+  /** Caminho da foto em public/ (ex.: "/integrantes/570281.jpeg"). Sem foto, aparecem as iniciais. */
   foto?: string;
   /** Iniciais quando a regra padrão (primeiro e último nome) repetiria as de outra pessoa. */
   iniciais?: string;
