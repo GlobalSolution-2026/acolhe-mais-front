@@ -2,6 +2,7 @@
  * Tipos dos dados fixos das páginas institucionais (Home, Sobre, Solução...).
  * Os dados ficam em src/data e as páginas só os percorrem com map.
  */
+import type { Cor } from './orientacao';
 
 /** Número de destaque com a fonte de onde ele veio (ex.: "~25%" das consultas perdidas por falta). */
 export interface NumeroDestaque {
@@ -47,4 +48,49 @@ export interface Alternativa {
   faz: string;
   /** O que falta para resolver o problema do Acolhe+. */
   falta: string;
+}
+
+/** Atalho para uma seção da mesma página (âncora). */
+export interface Atalho {
+  /** id da seção, sem o "#". */
+  id: string;
+  nome: string;
+}
+
+/** Linha do resultado da orientação: uma ou mais cores e o destino. */
+export interface ResultadoCor {
+  cores: Cor[];
+  /** Nome em negrito (ex.: "Vermelho – SAMU"). */
+  titulo: string;
+  texto: string;
+}
+
+/** Cartão com rótulo pequeno, valor em destaque opcional e texto (prazos, camadas, modelo de negócio). */
+export interface CartaoRotulado {
+  rotulo: string;
+  valor?: string;
+  texto: string;
+}
+
+/** Grupo com título e lista de itens (ex.: benefícios para o cidadão). */
+export interface GrupoItens {
+  titulo: string;
+  itens: string[];
+}
+
+/** Indicador de impacto (Tabela 4 do documento). */
+export interface Indicador {
+  nome: string;
+  /** Como o indicador é calculado. */
+  calculo: string;
+  /** De onde vem o dado (ex.: "Plataforma"). */
+  origem: string;
+  /** true quando o indicador aparece no painel da recepção. */
+  noPainel: boolean;
+}
+
+/** Limite da solução: trecho em destaque e o resto da frase. */
+export interface Limite {
+  destaque: string;
+  texto: string;
 }
