@@ -94,3 +94,17 @@ export interface Limite {
   destaque: string;
   texto: string;
 }
+
+/** Pergunta da FAQ. O id liga o botão à resposta (aria-controls) e serve de chave. */
+export interface PerguntaFaq {
+  id: string;
+  pergunta: string;
+  resposta: string;
+}
+
+/** Grupo de perguntas da FAQ. O id vira a âncora do atalho (ex.: "#grupo-orientacao"). */
+export interface GrupoFaq {
+  id: string;
+  titulo: string;
+  perguntas: PerguntaFaq[];
+}
