@@ -48,6 +48,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "O CEP tem 8 números; o endereço do ViaCEP é só um complemento.",
       "Se o ViaCEP falhar ou não achar o CEP, a pessoa segue só com o CEP (a orientação nunca trava).",
       "Para emergência, o botão vermelho da barra leva direto ao SAMU 192, em qualquer tela.",
+      "A legenda \"O que significam as cores?\" explica cada cor com número (1 = mais grave, 5 = menos grave), significado e destino.",
     ],
     endpoints: [{ metodo: "GET", rota: "/ws/{cep}/json/", api: "VIACEP" }],
   },
@@ -70,6 +71,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Mostra a cor e o destino: vermelho → SAMU 192; laranja → pronto-socorro; amarelo → UPA mais próxima; verde e azul → UBS. Antes de mostrar verde ou azul, o Modelo 2 de IA confere se o caso pode ser urgente.",
     regras: [
       "Cores inspiradas no Protocolo de Manchester: vermelho (emergência), laranja (muito urgente), amarelo (urgente), verde e azul (pouco ou não urgente).",
+      "Acessibilidade (WCAG 1.4.1): a cor nunca aparece sozinha. O selo mostra o número do nível (1 a 5) e o nome, e a legenda marca o resultado da pessoa.",
       "O Modelo 2 só pode ELEVAR a cor (verde/azul → amarelo), nunca baixar. Quando eleva, a tela avisa.",
       "Se a API de IA falhar, a orientação segue com a cor das regras e mostra um aviso discreto (não pode travar).",
       "UPA e UBS indicadas pelo CEP (os 3 primeiros números indicam a região).",

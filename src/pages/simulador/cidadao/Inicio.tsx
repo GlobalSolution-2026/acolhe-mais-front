@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 import { FiDroplet, FiFrown, FiThermometer, FiWind, FiZap } from 'react-icons/fi';
 import CampoFormulario from '../../../components/CampoFormulario';
+import LegendaCores from '../../../components/LegendaCores';
 import { useSimulador } from '../../../context/useSimulador';
 import { queixas } from '../../../data/queixas';
 import { buscarEndereco, formatarEndereco } from '../../../services/cep';
@@ -145,6 +146,9 @@ export default function Inicio() {
           );
         })}
       </div>
+
+      {/* Legenda das cores (acessibilidade): número, significado e destino de cada cor */}
+      <LegendaCores />
     </div>
   );
 }
