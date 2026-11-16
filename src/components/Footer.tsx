@@ -1,31 +1,50 @@
 import { Link } from 'react-router-dom';
 
+/** Links do rodapé, na mesma ordem do menu principal. */
+const LINKS_RODAPE = [
+  { rota: '/', nome: 'Início' },
+  { rota: '/sobre', nome: 'Sobre' },
+  { rota: '/solucao', nome: 'Solução' },
+  { rota: '/simulador', nome: 'Simulador' },
+  { rota: '/faq', nome: 'FAQ' },
+  { rota: '/contato', nome: 'Contato' },
+  { rota: '/integrantes', nome: 'Integrantes' },
+];
+
+/**
+ * Rodapé do site: logo, aviso de que é um projeto acadêmico, links das páginas
+ * e o lembrete de emergência.
+ * Regra: deixar claro que o site não tem vínculo com a Secretaria da Saúde
+ * e não substitui o atendimento de saúde.
+ */
 export default function Footer() {
   return (
-    <footer className="bg-primaria py-16 px-6 border-t border-white/5">
-      <div className="max-w-7xl mx-auto flex flex-col items-center">
-        
-
-        <Link to="/" className="text-3xl font-serif font-bold text-white tracking-wide mb-8 hover:opacity-90 transition-opacity">
-          Acolhe<span className="text-menta">+</span>
-        </Link>
-
-
-        <nav className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm font-medium text-mentaSuave/70 mb-12">
-          <Link to="/sobre" className="hover:text-menta transition-colors">Sobre</Link>
-          <Link to="/solucao" className="hover:text-menta transition-colors">Solução</Link>
-          <Link to="/simulador" className="hover:text-menta transition-colors">Simulador</Link>
-          <Link to="/faq" className="hover:text-menta transition-colors">FAQ</Link>
-          <Link to="/contato" className="hover:text-menta transition-colors">Contato</Link>
-          <Link to="/integrantes" className="hover:text-menta transition-colors">Integrantes</Link>
-        </nav>
-
-
-        <div className="w-full max-w-4xl border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-mentaSuave/50 font-light">
-          <p>© {new Date().getFullYear()} Acolhe+ CitizenTech. Todos os direitos reservados.</p>
-          <p>Global Solution 2026/2 — FIAP</p>
+    <footer className="bg-primariaEscura text-branco">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 lg:px-6">
+        <div className="flex flex-col justify-between gap-6 md:flex-row">
+          <div className="max-w-sm">
+            <Link to="/" className="text-2xl font-extrabold">
+              Acolhe<span className="text-menta">+</span>
+            </Link>
+            <p className="mt-2 text-sm text-branco/70">
+              Projeto acadêmico da Global Solution 2026/2 da FIAP. Protótipo sem vínculo com a Secretaria
+              Municipal da Saúde.
+            </p>
+          </div>
+          <nav
+            aria-label="Links do rodapé"
+            className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm font-semibold text-branco/80 sm:grid-cols-3"
+          >
+            {LINKS_RODAPE.map(({ rota, nome }) => (
+              <Link key={rota} to={rota} className="hover:text-menta">
+                {nome}
+              </Link>
+            ))}
+          </nav>
         </div>
-        
+        <p className="border-t border-branco/15 pt-6 text-sm text-branco/60">
+          Em emergência, ligue 192. Este site não substitui o atendimento de saúde.
+        </p>
       </div>
     </footer>
   );
