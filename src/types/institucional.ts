@@ -125,3 +125,24 @@ export interface CanalContato {
   /** Linha menor abaixo do valor (ex.: horário de atendimento). */
   detalhe: string;
 }
+
+/** Contribuição de um integrante: título curto em negrito e a frase que explica. */
+export interface Contribuicao {
+  titulo: string;
+  texto: string;
+}
+
+/** Integrante do grupo (página /integrantes e painel /integrantes/:rm). */
+export interface Integrante {
+  /** RM da FIAP; também é o parâmetro da rota /integrantes/:rm. */
+  rm: string;
+  nome: string;
+  funcao: string;
+  turma: string;
+  disciplinas: string[];
+  contribuicoes: Contribuicao[];
+  github: string;
+  linkedin: string;
+  /** Caminho da foto em public/ (ex.: "/integrantes/570281.jpg"). Sem foto, aparecem as iniciais. */
+  foto?: string;
+}
