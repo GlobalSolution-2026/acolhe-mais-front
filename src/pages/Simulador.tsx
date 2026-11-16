@@ -128,7 +128,7 @@ export default function Simulador() {
     <RequisicoesProvider>
       <SimuladorProvider>
         <div className="bg-fundo font-nunito text-texto">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
             <CabecalhoSimulador />
             <MenuAbas />
             <Outlet />
