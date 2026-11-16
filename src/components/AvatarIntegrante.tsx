@@ -10,6 +10,8 @@ const TAMANHOS = {
 interface AvatarIntegranteProps {
   nome: string;
   foto?: string;
+  /** Iniciais fixas, quando a regra padrão repetiria as de outra pessoa. */
+  iniciaisFixas?: string;
   tamanho?: keyof typeof TAMANHOS;
 }
 
@@ -29,7 +31,7 @@ function iniciais(nome: string): string {
  * Decorativo (aria-hidden): o nome sempre aparece em texto ao lado.
  * Para trocar de pessoa, o componente pai usa key, e o estado de erro volta ao início.
  */
-export default function AvatarIntegrante({ nome, foto, tamanho = 'grande' }: AvatarIntegranteProps) {
+export default function AvatarIntegrante({ nome, foto, iniciaisFixas, tamanho = 'grande' }: AvatarIntegranteProps) {
   const [fotoFalhou, setFotoFalhou] = useState(false);
   const classeBase = `${TAMANHOS[tamanho]} shrink-0 rounded-full`;
 
@@ -50,7 +52,7 @@ export default function AvatarIntegrante({ nome, foto, tamanho = 'grande' }: Ava
       aria-hidden="true"
       className={`${classeBase} flex items-center justify-center bg-primaria font-extrabold text-menta`}
     >
-      {iniciais(nome)}
+      {iniciaisFixas ?? iniciais(nome)}
     </span>
   );
 }

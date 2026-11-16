@@ -24,7 +24,7 @@ const BOTAO_LINK = 'inline-flex min-h-12 flex-1 items-center justify-center roun
  * No celular ocupa a tela toda; a partir de 640 px, uma coluna à direita.
  */
 export default function PainelIntegrante({ integrante, todos, onFechar }: PainelIntegranteProps) {
-  const { rm, nome, funcao, turma, foto, disciplinas, contribuicoes, github, linkedin } = integrante;
+  const { rm, nome, funcao, turma, foto, iniciais, disciplinas, contribuicoes, github, linkedin } = integrante;
   const botaoFechar = useRef<HTMLButtonElement>(null);
   const idTitulo = `titulo-integrante-${rm}`;
 
@@ -55,7 +55,7 @@ export default function PainelIntegrante({ integrante, todos, onFechar }: Painel
         </div>
 
         <div className="flex items-center gap-4">
-          <AvatarIntegrante key={rm} nome={nome} foto={foto} />
+          <AvatarIntegrante key={rm} nome={nome} foto={foto} iniciaisFixas={iniciais} />
           <div>
             <h2 id={idTitulo} className="text-2xl font-extrabold leading-tight text-primaria">
               {nome}
@@ -124,7 +124,10 @@ export default function PainelIntegrante({ integrante, todos, onFechar }: Painel
                     aria-current={atual ? 'page' : undefined}
                     className={`block rounded-full ${atual ? 'ring-2 ring-primaria ring-offset-2' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-menta'}`}
                   >
-                    <AvatarIntegrante key={outro.rm} nome={outro.nome} foto={outro.foto} tamanho="pequeno" />
+                    <AvatarIntegrante key={outro.rm} nome={outro.nome}
+                      foto={outro.foto}
+                      iniciaisFixas={outro.iniciais}
+                      tamanho="pequeno" />
                   </Link>
                 </li>
               );

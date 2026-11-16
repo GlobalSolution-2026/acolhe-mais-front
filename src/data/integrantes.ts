@@ -84,6 +84,8 @@ export const INTEGRANTES: Integrante[] = [
   {
     rm: '572860',
     nome: 'Nicolas Rodrigues Martins',
+    // "NM" já é do Nicolas Molina; aqui usa nome e segundo nome, como na demonstração.
+    iniciais: 'NR',
     funcao: 'Back-end (Java)',
     turma: '1TDSPW',
     disciplinas: ['Java'],
