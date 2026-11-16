@@ -1,3 +1,4 @@
+/** Número com até 2 casas decimais no padrão brasileiro (resto do projeto anterior; não usado no simulador). */
 export const formatarPontos = (valor: number) =>
   valor.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 

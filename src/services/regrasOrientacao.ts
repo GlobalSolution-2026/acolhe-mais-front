@@ -18,23 +18,31 @@ export const DESTINO_POR_COR: Record<Cor, Destino> = {
   AZUL: "UBS",
 };
 
+/** Gravidade de cada cor (para comparar: quanto maior, mais grave). */
 const PESO: Record<Cor, number> = { AZUL: 0, VERDE: 1, AMARELO: 2, LARANJA: 3, VERMELHO: 4 };
 
+/** Resposta que indica alarme na pergunta (quase sempre "SIM"; em algumas, "NAO"). */
 const respostaAlarme = (c: string) => perguntas.find((p) => p.codigo === c)?.dsRespostaAlarme ?? "SIM";
 
 /* Perguntas de marcar (MULTIPLA): "Nenhum destes" e "Não sei" são exclusivas e não são sinais. */
 const EXCLUSIVAS = ["NENHUM", "NAO_SEI"];
+/** A pergunta é de marcar (várias opções)? */
 const ehMultipla = (c: string) => perguntas.find((p) => p.codigo === c)?.tipoResposta === "MULTIPLA";
+/** Opções marcadas numa pergunta de marcar (lista vazia se não for de marcar). */
 const marcadas = (r: Respostas, c: string): string[] => (Array.isArray(r[c]) ? (r[c] as string[]) : []);
 /** Marcou algum sinal (equivale ao "Sim"). */
 const marcouSinal = (r: Respostas, c: string) => marcadas(r, c).some((v) => !EXCLUSIVAS.includes(v));
 /** Marcou algum sinal ou "Não sei" (equivale ao "Sim ou Não sei"). */
 const marcouSinalOuNaoSei = (r: Respostas, c: string) => marcouSinal(r, c) || marcadas(r, c).includes("NAO_SEI");
 
+/** A resposta da pergunta é de alarme (em pergunta de marcar: marcou algum sinal). */
 const sim = (r: Respostas, c: string) => (ehMultipla(c) ? marcouSinal(r, c) : r[c] === respostaAlarme(c));
+/** Regra geral: "Não sei" vale como o pior caso, então conta junto com o alarme. */
 const simOuNaoSei = (r: Respostas, c: string) =>
   ehMultipla(c) ? marcouSinalOuNaoSei(r, c) : sim(r, c) || r[c] === "NAO_SEI";
+/** Resposta numérica (idade, dor) ou null se ainda não respondida. */
 const num = (r: Respostas, c: string): number | null => (typeof r[c] === "number" ? (r[c] as number) : null);
+/** O número está entre min e max (inclusive)? */
 const entre = (v: number | null, min: number, max: number) => v !== null && v >= min && v <= max;
 
 /** Gestação ou pós-parto recente: grupo de risco para gripe e infecção urinária. */
@@ -48,7 +56,9 @@ export const alarmeGestacaoCabeca = (r: Respostas): boolean =>
 /* D1 (diarreia): sangue no vômito ou nas fezes, com o sinal conforme a opção. */
 const SINAL_SANGUE_HOJE = "Sangue no vômito ou nas fezes hoje";
 const SINAL_SANGUE_RECENTE = "Sangue nos últimos dias";
+/** Sangue hoje: sinal de instabilidade (pode levar a laranja ou vermelho). */
 const sangueHoje = (r: Respostas) => r["D1"] === "HOJE";
+/** Sangue nos últimos dias ou "Não sei": leva a amarelo (exceção à regra do pior caso). */
 const sangueRecente = (r: Respostas) => r["D1"] === "ULTIMOS_DIAS" || r["D1"] === "NAO_SEI";
 
 /** Regra: alguns alarmes (falta de ar na gripe, sangue/dor forte na diarreia) pedem a pergunta extra de instabilidade (INST). */
