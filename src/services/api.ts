@@ -8,8 +8,9 @@
  *   e espera 400 ms para imitar a rede (simular).
  * Ligar a API de verdade é só configurar a variável de ambiente.
  *
- * Ainda não aceito pela API Java: a RN21 (cadastro do balcão, BALCAO, virar conta com senha, SENHA).
- * Hoje o POST /cidadaos devolve 409 para qualquer CNS já cadastrado; no modo demonstração a RN21 funciona.
+ * RN21 (cadastro do balcão vira conta com senha): a API Java já faz no POST /cidadaos. Com tpAcesso SENHA
+ * e um CNS cadastrado como BALCAO, ela completa o cadastro (mesmo idCidadao, consultas mantidas) e devolve 201.
+ * O modo demonstração segue a mesma regra.
  *
  * As funções marcadas com "DEMONSTRAÇÃO: não existe na API Java" ficam sempre no mock
  * (lista do dia, oferta de vaga, orientação salva, balcão e ficha de saúde).
@@ -32,6 +33,9 @@ export const API_URL: string | undefined = import.meta.env.VITE_API_URL || undef
 
 /** Mensagem do 409 quando a oferta de vaga da lista do dia venceu ou foi repassada. */
 const MENSAGEM_OFERTA_VENCIDA = "Esta oferta venceu ou foi repassada. Confira seus avisos.";
+
+/** Mensagem do 409 no Criar conta: o Cartão SUS já tem conta com senha (a mesma no mock e na API real). */
+export const MENSAGEM_CONTA_EXISTENTE = "Já existe conta com este Cartão SUS. Use Entrar.";
 
 /** Mensagem do 409 ao agendar (a mesma no mock e na API real, para a tela não depender do texto da API). */
 export const MENSAGEM_HORARIO_OCUPADO = "Este horário acabou de ser ocupado. Escolha outro.";
@@ -137,10 +141,15 @@ export async function listarHorarios(idUnidade: number): Promise<Horario[]> {
 
 /* ---------- Cidadão ---------- */
 
-/** Corpo do POST /cidadaos com CNS, CPF, CEP e telefones só com números. */
-function corpoCidadao(dados: CidadaoEntrada): CidadaoEntrada {
+/**
+ * Corpo do POST /cidadaos com CNS, CPF, CEP e telefones só com números.
+ * A senha só vai quando tpAcesso é SENHA. No BALCAO o campo fica de fora do JSON: o CidadaoEntradaDTO
+ * tem @Size(min = 6) na senha, então "senha": "" daria 400; sem o campo (ou com null) a API aceita.
+ */
+function corpoCidadao({ senha, ...dados }: CidadaoEntrada): CidadaoEntrada {
   return {
     ...dados,
+    ...(dados.tpAcesso === "SENHA" ? { senha } : {}),
     nrCns: soNumeros(dados.nrCns),
     nrCpf: dados.nrCpf ? soNumeros(dados.nrCpf) : null,
     nrCelular: soNumeros(dados.nrCelular),
@@ -153,6 +162,7 @@ function corpoCidadao(dados: CidadaoEntrada): CidadaoEntrada {
  * POST /cidadaos — API Java (tpAcesso BALCAO, sem senha)
  * Cadastra um cidadão no balcão da Recepção.
  * Erros esperados: 400 (dados inválidos), 409 (CNS ou CPF já cadastrado).
+ * O corpo vai sem o campo senha (ver corpoCidadao).
  */
 export async function cadastrarCidadao(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">): Promise<Cidadao> {
   const corpo = corpoCidadao({ ...dados, tpAcesso: "BALCAO" });
@@ -183,20 +193,28 @@ function cadastrarNoMock({ senha, ...dados }: CidadaoEntrada): Cidadao {
  * Cartão SUS; a conta completa esse cadastro e mantém as consultas já marcadas.
  * Erros esperados: 400 (senha curta ou dados inválidos), 409 (já existe conta com este CNS).
  */
-// RN21 com a API real: a API Java ainda não transforma um cadastro BALCAO em SENHA e devolve 409
-// para qualquer CNS repetido. No modo demonstração ela já funciona.
+// RN21 com a API real: quem faz é a API Java (CidadaoService.criar). Se o CNS é de um cadastro BALCAO,
+// ela devolve 201 com o mesmo idCidadao, e a tela usa essa resposta como num cadastro novo.
+// Se o CNS já tem senha (ou é GOVBR), devolve 409; a tela mostra MENSAGEM_CONTA_EXISTENTE.
 export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">, senha: string): Promise<Cidadao> {
   const corpo = corpoCidadao({ ...dados, tpAcesso: "SENHA", senha });
   if (API_URL) {
-    const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
-    return converterCidadao(await resposta.json());
+    try {
+      const resposta = await requisitar(`${API_URL}/cidadaos`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
+      return converterCidadao(await resposta.json());
+    } catch (erro) {
+      // 409: a API diz "Já existe um cidadão com este CNS"; a tela troca pelo texto que manda usar Entrar.
+      // O Criar conta não envia CPF, então aqui o 409 só pode ser do CNS.
+      if (erro instanceof ErroApi && erro.status === 409) throw new ErroApi(MENSAGEM_CONTA_EXISTENTE, 409);
+      throw erro;
+    }
   }
   return simular("POST", "/cidadaos", "JAVA", () => {
     if (senha.length < 6) falhar({ status: 400, mensagem: "A senha precisa ter pelo menos 6 caracteres" });
     const s = obterStore();
     const existente = s.obterEstado().cidadaos.find((c) => c.nrCns === corpo.nrCns);
     if (!existente) return cadastrarNoMock(corpo);
-    if (existente.tpAcesso === "SENHA") falhar({ status: 409, mensagem: "Já existe conta com este Cartão SUS. Use Entrar." });
+    if (existente.tpAcesso === "SENHA") falhar({ status: 409, mensagem: MENSAGEM_CONTA_EXISTENTE });
     // GOVBR já é uma conta (pelo gov.br): a RN21 vale só para o cadastro do balcão.
     if (existente.tpAcesso === "GOVBR") falhar({ status: 409, mensagem: "Este Cartão SUS já tem conta pelo gov.br. O acesso pelo gov.br ainda não está disponível." });
     // RN21: cadastro do balcão → vira conta com senha (mesmo id, consultas mantidas).
