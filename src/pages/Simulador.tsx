@@ -2,7 +2,8 @@
  * Página: Simulador Acolhe+ (/simulador) — layout de todas as abas
  * Topo com o nome do simulador e o botão "Reiniciar demonstração", as 5 abas (NavLink)
  * e o <Outlet /> onde aparece a aba escolhida. Também monta os contextos do modo demonstração
- * (SimuladorProvider) e do painel de requisições (RequisicoesProvider), usados por todas as abas.
+ * (SimuladorProvider) e das requisições (RequisicoesProvider), usados por todas as abas,
+ * e o balão de requisições no canto inferior esquerdo (BalaoRequisicoes).
  * Veio do protótipo: LayoutCompartilhado e ModoDemonstracao (botão de reiniciar com confirmação).
  * Endpoints: nenhum (cada aba chama os seus).
  * Estados: não se aplica; mostra o selo "Demonstração" quando a API Java não está configurada
@@ -17,6 +18,7 @@ import { SimuladorProvider } from '../context/SimuladorContext';
 import { useSimulador } from '../context/useSimulador';
 import Botao from '../components/Botao';
 import SeloDemonstracao from '../components/SeloDemonstracao';
+import BalaoRequisicoes from '../components/status/BalaoRequisicoes';
 import { fmtDiaSemanaData } from '../lib/datas';
 import { diaSimulado } from '../lib/relogio';
 import { API_URL } from '../services/api';
@@ -128,12 +130,14 @@ export default function Simulador() {
     <RequisicoesProvider>
       <SimuladorProvider>
         <div className="bg-fundo font-nunito text-texto">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+          {/* pb-28 abaixo de 1024 px: espaço para o balão de requisições (faixa embaixo) não cobrir o fim da página */}
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-28 pt-8 sm:px-6 lg:px-8 lg:pb-16">
             <CabecalhoSimulador />
             <MenuAbas />
             <Outlet />
           </div>
         </div>
+        <BalaoRequisicoes />
       </SimuladorProvider>
     </RequisicoesProvider>
   );

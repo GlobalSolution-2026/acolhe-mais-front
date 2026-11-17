@@ -19,7 +19,7 @@ import PerfisTeste from '../../../components/PerfisTeste';
 import SeloDemonstracao from '../../../components/SeloDemonstracao';
 import ModoDemonstracaoRecepcao from '../../../components/recepcao/ModoDemonstracaoRecepcao';
 import { useSimulador } from '../../../context/useSimulador';
-import { explicacaoRecepcao } from '../../../data/explicacoesRecepcao';
+import { chaveTelaRecepcao, explicacaoRecepcao } from '../../../data/explicacoesRecepcao';
 import { useCarregar } from '../../../hooks/useCarregar';
 import { listarUnidades } from '../../../services/api';
 
@@ -44,7 +44,7 @@ export default function AbaRecepcao() {
       explicacao={
         <div className="flex flex-col gap-4">
           <PerfisTeste />
-          <PainelExplicacao {...explicacaoRecepcao(tela)} />
+          <PainelExplicacao {...explicacaoRecepcao(tela)} tela={`recepcao/${chaveTelaRecepcao(tela)}`} />
         </div>
       }
     >

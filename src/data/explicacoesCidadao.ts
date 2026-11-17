@@ -1,15 +1,14 @@
 /**
  * Textos do painel de explicação da aba Cidadão, um por tela do celular.
  * A aba escolhe o texto pela rota aberta (ex.: "inicio", "emergencia"); telas sem texto próprio usam o geral.
+ * Os endpoints de cada tela não ficam aqui: vêm da lista única em data/endpointsApi.ts (endpointsDaTela).
  */
-import type { EndpointExplicado } from "../components/PainelExplicacao";
 
 /** Conteúdo do PainelExplicacao de uma tela. */
 export interface ExplicacaoTela {
   titulo: string;
   oQueFaz: string;
   regras: string[];
-  endpoints: EndpointExplicado[];
 }
 
 /** Explicação geral do celular (telas ainda em construção). */
@@ -22,18 +21,6 @@ export const EXPLICACAO_CIDADAO: ExplicacaoTela = {
     "A verificação de urgência (IA) só pode elevar a cor, nunca baixar.",
     "Agendamento só em dias úteis, sem feriados nacionais.",
     "Nome, Cartão SUS, nascimento e sexo não mudam pelo app (RF27).",
-  ],
-  endpoints: [
-    { metodo: "GET", rota: "/unidades", api: "JAVA" },
-    { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-    { metodo: "POST", rota: "/cidadaos", api: "JAVA" },
-    { metodo: "POST", rota: "/cidadaos/login", api: "JAVA" },
-    { metodo: "PUT", rota: "/cidadaos/{id}", api: "JAVA" },
-    { metodo: "POST", rota: "/consultas", api: "JAVA" },
-    { metodo: "PUT", rota: "/consultas/{id}/status", api: "JAVA" },
-    { metodo: "POST", rota: "/verificar-urgencia", api: "FLASK" },
-    { metodo: "POST", rota: "/prever-falta", api: "FLASK" },
-    { metodo: "GET", rota: "/ws/{cep}/json/", api: "VIACEP" },
   ],
 };
 
@@ -50,7 +37,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Para emergência, o botão vermelho da barra leva direto ao SAMU 192, em qualquer tela.",
       "A legenda \"O que significam as cores?\" explica cada cor com número (1 = mais grave, 5 = menos grave), significado e destino.",
     ],
-    endpoints: [{ metodo: "GET", rota: "/ws/{cep}/json/", api: "VIACEP" }],
   },
   orientacao: {
     titulo: "Cidadão · Orientação",
@@ -63,7 +49,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Só para maiores de 18 anos; dor de garganta com tosse ou coriza segue o fluxo de síndrome gripal.",
       "Com login e \"Para mim\", idade, sexo e doenças da ficha não são perguntados de novo (a tela avisa o que foi usado).",
     ],
-    endpoints: [],
   },
   resultado: {
     titulo: "Cidadão · Resultado",
@@ -77,11 +62,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "UPA e UBS indicadas pelo CEP (os 3 primeiros números indicam a região).",
       "O código da orientação vale só no dia, para mostrar na recepção da UBS.",
     ],
-    endpoints: [
-      { metodo: "POST", rota: "/verificar-urgencia", api: "FLASK" },
-      { metodo: "GET", rota: "/unidades", api: "JAVA" },
-      { metodo: "POST", rota: "orientação salva", api: "FRONT" },
-    ],
   },
   ubs: {
     titulo: "Cidadão · UBS próximas",
@@ -91,7 +71,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "A ordem usa os 3 primeiros números do CEP (região): mesma região primeiro.",
       "A API devolve todas as unidades; o filtro UBS é feito no front.",
     ],
-    endpoints: [{ metodo: "GET", rota: "/unidades", api: "JAVA" }],
   },
   "ubs/:idUnidade": {
     titulo: "Cidadão · Horários da UBS",
@@ -101,10 +80,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Agenda só em dias úteis, sem feriados nacionais, e só horários que ainda não passaram.",
       "Lista do dia: só para verde/azul e só em dia útil (demonstração: não existe na API Java).",
       "Mostra “Procure a urgência se...” com os sinais de piora da queixa.",
-    ],
-    endpoints: [
-      { metodo: "GET", rota: "/unidades/{id}", api: "JAVA" },
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
     ],
   },
   entrar: {
@@ -117,7 +92,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Cadastro feito no balcão (sem senha) não entra: precisa criar a conta (RN21).",
       "“Entrar com gov.br” fica desativado até a adesão do município.",
     ],
-    endpoints: [{ metodo: "POST", rota: "/cidadaos/login", api: "JAVA" }],
   },
   "criar-conta": {
     titulo: "Cidadão · Criar conta",
@@ -127,7 +101,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "RN21: quem foi cadastrado no balcão cria a conta com o mesmo Cartão SUS e mantém as consultas.",
       "Se o Cartão SUS já tem conta, erro 409: “Já existe conta com este Cartão SUS. Use Entrar.”",
     ],
-    endpoints: [{ metodo: "POST", rota: "/cidadaos", api: "JAVA" }],
   },
   agendar: {
     titulo: "Cidadão · Agendar",
@@ -138,12 +111,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "409: se outra pessoa pegou o horário, a tela avisa e oferece escolher outro.",
       "Risco ALTO a partir de 0,60. Se a API de IA falhar, a consulta fica com risco ALTO (o lado mais cuidadoso).",
     ],
-    endpoints: [
-      { metodo: "GET", rota: "/cidadaos/{id}", api: "JAVA" },
-      { metodo: "PUT", rota: "/cidadaos/{id}", api: "JAVA" },
-      { metodo: "POST", rota: "/prever-falta", api: "FLASK" },
-      { metodo: "POST", rota: "/consultas", api: "JAVA" },
-    ],
   },
   sucesso: {
     titulo: "Cidadão · Consulta marcada",
@@ -153,7 +120,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Risco ALTO: 3 dias úteis antes, com lembrete adicional.",
       "Prazo final: 1 dia útil antes; quem não confirma tem o horário liberado para a lista do dia.",
     ],
-    endpoints: [],
   },
   "lista-do-dia": {
     titulo: "Cidadão · Lista do dia",
@@ -163,7 +129,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "A entrada é buscada pela conta logada; a feita sem login passa para a conta ao entrar.",
       "Demonstração: a lista do dia ainda não existe na API Java.",
     ],
-    endpoints: [{ metodo: "GET", rota: "lista do dia", api: "FRONT" }],
   },
   consultas: {
     titulo: "Cidadão · Minhas consultas",
@@ -172,10 +137,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Confirmar só na janela: de 2 (ou 3, risco ALTO) dias úteis antes até 1 dia útil antes.",
       "“Não vou poder ir” libera o horário (status LIBERADA) para a lista do dia.",
       "Só cancela consulta agendada ou confirmada que ainda não aconteceu.",
-    ],
-    endpoints: [
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "PUT", rota: "/consultas/{id}/status", api: "JAVA" },
     ],
   },
   avisos: {
@@ -186,11 +147,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Recusada ou vencida, a vaga vai para o próximo da fila.",
       "O sino do topo conta os pedidos de confirmação e as ofertas.",
     ],
-    endpoints: [
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "PUT", rota: "/consultas/{id}/status", api: "JAVA" },
-      { metodo: "GET", rota: "ofertas de vaga", api: "FRONT" },
-    ],
   },
   perfil: {
     titulo: "Cidadão · Perfil",
@@ -199,7 +155,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Sem login, convida a entrar ou criar conta (a orientação funciona sem conta).",
       "A ficha de saúde é uma prévia da integração com o Meu SUS (demonstração).",
     ],
-    endpoints: [{ metodo: "GET", rota: "/cidadaos/{id}", api: "JAVA" }],
   },
   "perfil/editar": {
     titulo: "Cidadão · Editar perfil",
@@ -207,10 +162,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     regras: [
       "RF27: nome, Cartão SUS, nascimento e sexo só para leitura; para corrigir, procurar a recepção da UBS.",
       "O PUT leva só os campos editáveis (CidadaoAtualizacaoDTO da API Java).",
-    ],
-    endpoints: [
-      { metodo: "GET", rota: "/cidadaos/{id}", api: "JAVA" },
-      { metodo: "PUT", rota: "/cidadaos/{id}", api: "JAVA" },
     ],
   },
   "perfil/ficha": {
@@ -221,7 +172,6 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "Dado sensível (LGPD, art. 11): só salva com a autorização marcada, e a pessoa pode apagar.",
       "Prévia da integração com o Meu SUS: fica só no front (demonstração).",
     ],
-    endpoints: [{ metodo: "PUT", rota: "ficha de saúde", api: "FRONT" }],
   },
   emergencia: {
     titulo: "Cidadão · Emergência",
@@ -232,16 +182,21 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "O endereço vem do CEP informado no Início, quando houver.",
       "A ficha de saúde é uma prévia da integração com o Meu SUS (sempre demonstração).",
     ],
-    endpoints: [],
   },
 };
+
+/**
+ * Chave da tela do celular: "ubs/3" vira a rota com parâmetro "ubs/:idUnidade".
+ * @param tela trecho da rota depois de /simulador/cidadao/ (ex.: "inicio", "ubs/3")
+ */
+export function chaveTelaCidadao(tela: string): string {
+  return /^ubs\/[^/]+$/.test(tela) ? "ubs/:idUnidade" : tela;
+}
 
 /**
  * Escolhe a explicação da tela aberta.
  * @param tela trecho da rota depois de /simulador/cidadao/ (ex.: "inicio")
  */
 export function explicacaoDaTela(tela: string): ExplicacaoTela {
-  // "ubs/3" usa a explicação da rota com parâmetro "ubs/:idUnidade".
-  const chave = /^ubs\/[^/]+$/.test(tela) ? "ubs/:idUnidade" : tela;
-  return EXPLICACOES_TELAS[chave] ?? EXPLICACAO_CIDADAO;
+  return EXPLICACOES_TELAS[chaveTelaCidadao(tela)] ?? EXPLICACAO_CIDADAO;
 }

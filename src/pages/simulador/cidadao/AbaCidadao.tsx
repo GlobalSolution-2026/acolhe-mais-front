@@ -11,7 +11,7 @@ import Celular from '../../../components/celular/Celular';
 import LayoutAba from '../../../components/LayoutAba';
 import PainelExplicacao from '../../../components/PainelExplicacao';
 import PerfisTeste from '../../../components/PerfisTeste';
-import { explicacaoDaTela } from '../../../data/explicacoesCidadao';
+import { chaveTelaCidadao, explicacaoDaTela } from '../../../data/explicacoesCidadao';
 import { BASE_CELULAR } from '../../../services/navegacao';
 
 /** Aba Cidadão: celular + painel que acompanha a tela aberta. */
@@ -26,7 +26,7 @@ export default function AbaCidadao() {
       explicacao={
         <div className="flex flex-col gap-4">
           <PerfisTeste />
-          <PainelExplicacao {...explicacao} />
+          <PainelExplicacao {...explicacao} tela={`cidadao/${chaveTelaCidadao(tela)}`} />
         </div>
       }
     >

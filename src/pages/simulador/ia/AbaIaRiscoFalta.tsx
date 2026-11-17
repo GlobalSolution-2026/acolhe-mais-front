@@ -115,7 +115,7 @@ export default function AbaIaRiscoFalta() {
             'Risco ALTO a partir de 0,60: pedido de confirmação 3 dias úteis antes, com lembrete. BAIXO: 2 dias úteis antes.',
             'Limitações desta versão: smsRecebido vai sempre false no agendamento (o lembrete ainda não foi enviado) e o bairro não é enviado (a API usa "OUTROS"). Ideia futura: um modelo por unidade.',
           ]}
-          endpoints={[{ metodo: 'POST', rota: '/prever-falta', api: 'FLASK' }]}
+          tela="ia-risco-falta"
         />
       }
     >
