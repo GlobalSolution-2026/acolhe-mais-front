@@ -2,7 +2,7 @@
  * Página: aba IA – Verificação de urgência (/simulador/ia-urgencia)
  * Tela de "admin" do Modelo 2: formulário com idade, sexo, trauma, dor de 0 a 10 (useWatch mostra o valor)
  * e estado mental, ou "Sortear caso de exemplo" (preenche com um caso de data/casosUrgencia.ts).
- * Mostra se o caso é urgente, a probabilidade e o efeito na orientação, destacando a
+ * Mostra se o caso é urgente, a pontuação de urgência e o efeito na orientação, destacando a
  * regra "só pode elevar" com exemplos lado a lado.
  * Veio de: planejamento do grupo (não há tela equivalente no protótipo).
  * Endpoints: POST /verificar-urgencia (API Flask).
@@ -193,7 +193,7 @@ export default function AbaIaUrgencia() {
                 {resultado.urgente ? 'Urgente' : 'Não urgente'}
               </span>
             </p>
-            <BarraProbabilidade valor={resultado.probabilidade} rotulo="Probabilidade de ser urgente" />
+            <BarraProbabilidade valor={resultado.probabilidade} rotulo="Pontuação de urgência" />
             <div className="flex flex-col gap-2 rounded-xl bg-mentaSuave p-3">
               <p className="font-bold text-primaria">Efeito na orientação</p>
               {resultado.urgente ? (

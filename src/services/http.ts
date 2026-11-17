@@ -2,7 +2,7 @@
  * Base de todas as chamadas do front (API Java, API Flask e ViaCEP).
  *
  * - requisitar(): chama o fetch real, mede o tempo, registra no painel de requisições
- *   (aba Status das APIs) e, se a resposta não for ok, lê o ErroDTO { status, mensagem } e lança o erro.
+ *   (aba Status das APIs) e, se a resposta não for ok, lê a mensagem de erro (ErroDTO da Java ou { erro } da Flask) e lança o erro.
  *   Assim a página só precisa mostrar a mensagem.
  * - simular(): o mesmo para o modo demonstração (quando a variável de ambiente está vazia):
  *   espera 400 ms para imitar a rede, executa a função do mock e registra a chamada como "demonstração".
@@ -88,9 +88,10 @@ export async function requisitar(url: string, api: NomeApi, opcoes: RequestInit 
   registrar({ metodo, rota, api, status: resposta.status, tempoMs: Math.round(performance.now() - inicio), demonstracao: false });
 
   if (!resposta.ok) {
-    // A API Java devolve o ErroDTO { status, mensagem }; se o corpo não for JSON, usa uma mensagem genérica.
-    const corpo = (await resposta.json().catch(() => null)) as Partial<ErroDTO> | null;
-    throw new ErroApi(corpo?.mensagem ?? `Erro ${resposta.status} ao chamar ${rota}.`, resposta.status);
+    // A API Java devolve o ErroDTO { status, mensagem } e a API Flask devolve { erro }.
+    // Se o corpo não tiver nenhum dos dois (ou não for JSON), usa uma mensagem genérica.
+    const corpo = (await resposta.json().catch(() => null)) as (Partial<ErroDTO> & { erro?: string }) | null;
+    throw new ErroApi(corpo?.mensagem ?? corpo?.erro ?? `Erro ${resposta.status} ao chamar ${rota}.`, resposta.status);
   }
   return resposta;
 }
