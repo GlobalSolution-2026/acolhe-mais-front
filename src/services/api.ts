@@ -137,10 +137,15 @@ export async function listarHorarios(idUnidade: number): Promise<Horario[]> {
 
 /* ---------- Cidadão ---------- */
 
-/** Corpo do POST /cidadaos com CNS, CPF, CEP e telefones só com números. */
-function corpoCidadao(dados: CidadaoEntrada): CidadaoEntrada {
+/**
+ * Corpo do POST /cidadaos com CNS, CPF, CEP e telefones só com números.
+ * A senha só vai quando tpAcesso é SENHA. No BALCAO o campo fica de fora do JSON: o CidadaoEntradaDTO
+ * tem @Size(min = 6) na senha, então "senha": "" daria 400; sem o campo (ou com null) a API aceita.
+ */
+function corpoCidadao({ senha, ...dados }: CidadaoEntrada): CidadaoEntrada {
   return {
     ...dados,
+    ...(dados.tpAcesso === "SENHA" ? { senha } : {}),
     nrCns: soNumeros(dados.nrCns),
     nrCpf: dados.nrCpf ? soNumeros(dados.nrCpf) : null,
     nrCelular: soNumeros(dados.nrCelular),
@@ -153,6 +158,7 @@ function corpoCidadao(dados: CidadaoEntrada): CidadaoEntrada {
  * POST /cidadaos — API Java (tpAcesso BALCAO, sem senha)
  * Cadastra um cidadão no balcão da Recepção.
  * Erros esperados: 400 (dados inválidos), 409 (CNS ou CPF já cadastrado).
+ * O corpo vai sem o campo senha (ver corpoCidadao).
  */
 export async function cadastrarCidadao(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">): Promise<Cidadao> {
   const corpo = corpoCidadao({ ...dados, tpAcesso: "BALCAO" });
