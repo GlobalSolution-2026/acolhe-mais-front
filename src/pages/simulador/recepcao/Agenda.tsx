@@ -94,7 +94,7 @@ export default function Agenda() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold text-primaria">Agenda — {unidade?.nmUnidade}</h1>
-      <p className="-mt-3 text-sm text-textoSuave">Risco alto: probabilidade de falta de 60% ou mais.</p>
+      <p className="-mt-3 text-sm text-textoSuave">Risco alto: pontuação de risco de 0,60 ou mais.</p>
       <div className="flex flex-col gap-1 md:w-80">
         <label htmlFor="diaAgenda" className="font-semibold">Dia</label>
         <select

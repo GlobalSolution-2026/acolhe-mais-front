@@ -1,6 +1,6 @@
 /**
  * Página: Pendentes (aba Recepção UBS → Pendentes, /simulador/recepcao/pendentes)
- * Consultas da UBS que precisam de confirmação: risco ALTO primeiro, com a probabilidade do Modelo 1,
+ * Consultas da UBS que precisam de confirmação: risco ALTO primeiro, com a pontuação de risco do Modelo 1,
  * o prazo e os contatos. A recepção registra "Confirmado por telefone", "Confirmado presencialmente"
  * ou "Cancelou por telefone".
  * Veio do protótipo: src/pages/recepcao/Pendentes.tsx.
@@ -61,7 +61,7 @@ export default function Pendentes() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-extrabold text-primaria">Confirmações pendentes</h1>
-      <p className="-mt-3 text-sm text-textoSuave">Risco alto primeiro: probabilidade de falta de 60% ou mais.</p>
+      <p className="-mt-3 text-sm text-textoSuave">Risco alto primeiro: pontuação de risco de 0,60 ou mais.</p>
       {erroAcao && <MensagemErro mensagem={erroAcao} />}
       {pendentes.length === 0 && <EstadoVazio mensagem="Nenhuma consulta aguardando confirmação." />}
 
