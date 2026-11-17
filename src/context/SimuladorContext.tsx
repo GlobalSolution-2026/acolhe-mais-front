@@ -9,7 +9,7 @@ import { carregarFeriados } from "../lib/feriados";
 import { agora, carregarPreferenciaSimulacao } from "../lib/relogio";
 import { entradaDoCidadao, listaDoDiaAberta, vincularEntradaSemLogin } from "../services/regrasAgendamento";
 import { finalizarOferta, oferecerHorario, simularPrazo, vencerOfertas } from "../services/simulacao";
-import type { EntradaListaDoDia } from "../types";
+import type { Consulta, EntradaListaDoDia, Horario } from "../types";
 import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
 import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
@@ -147,7 +147,7 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
   );
 
   const oferecerVaga = useCallback(
-    (idHorario: number) => atualizarEstado((e) => oferecerHorario(e, idHorario, agora())),
+    (horario: Horario, consultas: Consulta[]) => atualizarEstado((e) => oferecerHorario(e, horario, agora(), consultas)),
     [atualizarEstado],
   );
 

@@ -38,7 +38,7 @@ export interface EstadoSimulador {
 const CHAVE_STORAGE = "acolhe-plus:simulador";
 
 /** Sobe quando o formato do estado muda: o estado salvo antigo é descartado. */
-const VERSAO_SEMENTE = 3; // 2: nomes da API Java (id*), CEP e telefone só com números · 3: cidadãos 1 a 8 iguais à carga do banco
+const VERSAO_SEMENTE = 3; // 2: nomes da API Java (id*), CEP e telefone só com números · 3: cidadãos 1 a 8 iguais à carga do banco e dtHorario na oferta
 
 /**
  * Monta o estado inicial da demonstração a partir dos dados de exemplo (pasta data/).

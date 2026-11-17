@@ -135,6 +135,8 @@ export interface OfertaVaga {
   idOferta: number;
   idHorario: number;
   idUnidade: number;
+  /** Data e hora do horário oferecido, copiadas na hora da oferta (o horário pode ser da API, não do mock). */
+  dtHorario: string; // ISO
   idEntrada: number;
   nmCidadao: string;
   dtCriacao: string; // ISO

@@ -35,13 +35,13 @@ function CardOferta({ oferta }: { oferta: OfertaVaga }) {
     const relogio = setInterval(() => setInstante(agora()), 1000);
     return () => clearInterval(relogio);
   }, []);
-  const horario = estado.horarios.find((h) => h.idHorario === oferta.idHorario);
   const unidade = estado.unidades.find((u) => u.idUnidade === oferta.idUnidade);
 
   return (
     <article className="flex flex-col gap-2 rounded-xl border-2 border-primaria bg-branco p-4 shadow-leve">
       <p className="font-extrabold text-primaria">Vaga liberada na {unidade?.nmUnidade ?? 'UBS'}!</p>
-      {horario && <p className="font-semibold">{fmtDiaHora(horario.dtHorario)}</p>}
+      {/* Data copiada na oferta: o horário pode ser da API, não do mock. */}
+      <p className="font-semibold">{fmtDiaHora(oferta.dtHorario)}</p>
       <p className="font-bold text-primaria" role="timer">Você tem {tempoRestanteOferta(oferta, instante)} para aceitar.</p>
       <div className="grid grid-cols-2 gap-2">
         <button

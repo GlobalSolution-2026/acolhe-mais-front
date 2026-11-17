@@ -3,7 +3,7 @@
  * só aceita componentes nos arquivos .tsx; o hook useSimulador() está em useSimulador.ts.
  */
 import { createContext } from "react";
-import type { EntradaListaDoDia } from "../types";
+import type { Consulta, EntradaListaDoDia, Horario } from "../types";
 import type { ResumoSimulacao } from "../services/simulacao";
 import type { CodigoQueixa, LocalOrientacao, Resposta, ResultadoFinal } from "../types/orientacao";
 import type { EstadoSimulador } from "./estadoSimulador";
@@ -43,8 +43,11 @@ export interface SimuladorValor {
   responderOferta: (idOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA") => void;
   /** Troca a UBS mostrada no painel da recepção. */
   selecionarUnidadeRecepcao: (idUnidade: number) => void;
-  /** A recepção oferece um horário livre de hoje ao primeiro da lista do dia (demonstração). */
-  oferecerVaga: (idHorario: number) => void;
+  /**
+   * A recepção oferece um horário livre de hoje ao primeiro da lista do dia (demonstração).
+   * Horário e consultas vêm da tela (API ou mock), não do estado do mock.
+   */
+  oferecerVaga: (horario: Horario, consultas: Consulta[]) => void;
   /** DEMONSTRAÇÃO: faz o prazo de confirmação passar e libera as consultas não confirmadas. */
   simularPassagemPrazo: () => ResumoSimulacao;
   /** DEMONSTRAÇÃO: vence agora todas as ofertas de vaga pendentes. */
