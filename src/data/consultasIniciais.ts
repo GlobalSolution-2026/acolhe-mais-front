@@ -27,6 +27,35 @@ const CIDADAOS_DA_CARGA: { nrCns: string; tpAcesso: TipoAcesso; nrCpf: string | 
   { nrCns: "700000000000007", tpAcesso: "GOVBR", nrCpf: "10000000008" }, // 8 José Oliveira
 ];
 
+/**
+ * Deixa o histórico sorteado coerente com o painel "Perfis para testar" (data/perfisTeste.ts),
+ * como na carga do banco: Pedro (4) sem faltas e com risco BAIXO; Carlos (6) com consultas confirmadas.
+ * Altera a lista recebida (as consultas acabaram de ser criadas pela semente).
+ * @param consultas consultas geradas pela semente
+ * @param now "agora" da demonstração, em milissegundos
+ */
+function ajustarPerfisTeste(consultas: Consulta[], now: number): void {
+  for (const c of consultas) {
+    if (c.idCidadao === 4) {
+      // Pedro: falta vira presença e a probabilidade cai abaixo do limiar 0,60 (risco BAIXO).
+      if (c.dsStatus === "FALTA") c.dsStatus = "REALIZADA";
+      const prob = Number(Math.min((c.vlProbFalta ?? 0.3) * 0.5, 0.45).toFixed(2));
+      c.vlProbFalta = prob;
+      c.dsRiscoFalta = classificarRiscoFalta(prob);
+    }
+    if (c.idCidadao === 6 && c.dsStatus === "AGENDADA") {
+      // Carlos: as consultas que já estão no prazo de confirmação aparecem confirmadas pelo app.
+      const inicio = inicioPedidoConfirmacao(c)?.getTime();
+      const prazo = prazoConfirmacao(c)?.getTime();
+      if (inicio !== undefined && prazo !== undefined && inicio <= now && now <= prazo) {
+        c.dsStatus = "CONFIRMADA";
+        c.dtConfirmacao = new Date(Math.max(inicio, now - 30 * 60_000)).toISOString();
+        c.dsCanalConfirmacao = "APP";
+      }
+    }
+  }
+}
+
 export interface Semente {
   cidadaos: Cidadao[];
   consultas: Consulta[];
@@ -155,6 +184,7 @@ export function gerarSemente(horariosBase: Horario[], agora: Date = new Date()):
       h.flOcupado = true;
     }
   }
+  ajustarPerfisTeste(consultas, now);
   const inicioEntrada = new Date(agora); inicioEntrada.setHours(7, 0, 0, 0);
   const fimEntrada = new Date(agora); fimEntrada.setHours(17, 0, 0, 0);
   const limiteEntrada = agora < inicioEntrada || agora > fimEntrada ? fimEntrada.getTime() : now;
