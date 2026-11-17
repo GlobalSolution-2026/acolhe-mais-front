@@ -16,27 +16,74 @@ import { classificarRiscoFalta } from "./regrasAgendamento";
 export const FLASK_URL: string | undefined = import.meta.env.VITE_FLASK_URL || undefined;
 
 /**
- * Converte a resposta do Modelo 1 para os nomes da Consulta (vlProbFalta e dsRiscoFalta).
- * O risco é sempre recalculado pelo limiar do front (0,60), para valer a mesma regra em todo lugar.
+ * Converte a entrada do Modelo 1 para o formato da API Flask (nomes em snake_case).
+ * Os tipos do front continuam em camelCase; só aqui eles viram o corpo da requisição.
+ * - diaSemana: no front é o Date.getDay (1 = segunda ... 5 = sexta); a API usa 0 = segunda ... 4 = sexta.
+ * - smsRecebido: a API espera 1 ou 0, não true/false.
+ * - bairro: não é enviado (limitação desta versão; a API usa "OUTROS").
+ * @param dados entrada do Modelo 1 no formato do front
+ * @returns o corpo esperado por POST /prever-falta
  */
-// TODO: conferir nomes com a API Flask. O planejamento usa { probabilidade, risco };
-// o protótipo usava { vlProbFalta, dsRiscoFalta }. Aqui os dois formatos são aceitos.
+function montarCorpoPrevisao(dados: PrevisaoFaltaEntrada) {
+  return {
+    idade: dados.idade,
+    sexo: dados.sexo,
+    antecedencia_dias: dados.antecedenciaDias,
+    dia_semana: dados.diaSemana - 1,
+    sms_recebido: dados.smsRecebido ? 1 : 0,
+    faltas_anteriores: dados.faltasAnteriores,
+  };
+}
+
+/**
+ * Converte a resposta do Modelo 1 para os nomes da Consulta (vlProbFalta e dsRiscoFalta).
+ * A API Flask responde { pontuacao_risco, risco: "alto" | "baixo", limiar, confirmacao_dias_uteis }.
+ * Os nomes antigos (probabilidade e vlProbFalta) continuam aceitos como alternativa.
+ * @param json corpo da resposta de POST /prever-falta
+ */
 export function converterPrevisao(json: unknown): PrevisaoFalta {
-  const dados = (json ?? {}) as { probabilidade?: unknown; vlProbFalta?: unknown };
-  const bruto = dados.probabilidade ?? dados.vlProbFalta;
-  if (typeof bruto !== "number") throw new Error("A API de IA respondeu sem a probabilidade de falta.");
+  const dados = (json ?? {}) as { pontuacao_risco?: unknown; probabilidade?: unknown; vlProbFalta?: unknown; risco?: unknown };
+  const bruto = dados.pontuacao_risco ?? dados.probabilidade ?? dados.vlProbFalta;
+  if (typeof bruto !== "number") throw new Error("A API de IA respondeu sem a pontuação de risco de falta.");
   const vlProbFalta = Math.round(bruto * 100) / 100;
-  return { vlProbFalta, dsRiscoFalta: classificarRiscoFalta(vlProbFalta) };
+  // Regra: o risco vem da própria API. Recalcular pelo valor arredondado erraria na beira do limiar
+  // (0,5963 vira 0,60 e o front mostraria ALTO quando a API disse baixo).
+  // Só quando a API não manda o risco é que o front classifica pelo limiar de 0,60.
+  const risco = typeof dados.risco === "string" ? dados.risco.toUpperCase() : null;
+  const dsRiscoFalta = risco === "ALTO" || risco === "BAIXO" ? risco : classificarRiscoFalta(vlProbFalta);
+  return { vlProbFalta, dsRiscoFalta };
+}
+
+/**
+ * Converte a entrada do Modelo 2 para o formato da API Flask.
+ * - dor: true quando a nota é maior que 0; nota_dor (1 a 10) só vai quando há dor.
+ * - estadoMentalAlerta vira alerta; idade, sexo e trauma vão iguais.
+ * @param dados entrada do Modelo 2 no formato do front
+ * @returns o corpo esperado por POST /verificar-urgencia
+ */
+function montarCorpoUrgencia(dados: VerificacaoUrgenciaEntrada) {
+  const temDor = dados.nrDor > 0;
+  return {
+    idade: dados.idade,
+    sexo: dados.sexo,
+    trauma: dados.trauma,
+    dor: temDor,
+    // Sem dor, o campo não é enviado (a API só aceita nota de 1 a 10).
+    ...(temDor ? { nota_dor: dados.nrDor } : {}),
+    alerta: dados.estadoMentalAlerta,
+  };
 }
 
 /**
  * Converte a resposta do Modelo 2.
- * TODO: conferir nomes com a API Flask (planejado: { urgente, probabilidade }).
+ * A API Flask responde { urgente, pontuacao_risco, limiar }; probabilidade continua aceito como alternativa.
+ * @param json corpo da resposta de POST /verificar-urgencia
  */
 export function converterUrgencia(json: unknown): VerificacaoUrgenciaSaida {
-  const dados = (json ?? {}) as { urgente?: unknown; probabilidade?: unknown };
+  const dados = (json ?? {}) as { urgente?: unknown; pontuacao_risco?: unknown; probabilidade?: unknown };
   if (typeof dados.urgente !== "boolean") throw new Error("A API de IA respondeu sem o campo urgente.");
-  return { urgente: dados.urgente, probabilidade: typeof dados.probabilidade === "number" ? dados.probabilidade : 0 };
+  const pontuacao = dados.pontuacao_risco ?? dados.probabilidade;
+  return { urgente: dados.urgente, probabilidade: typeof pontuacao === "number" ? pontuacao : 0 };
 }
 
 /**
@@ -55,12 +102,12 @@ export async function verificarStatusFlask(): Promise<{ status: string }> {
 
 /**
  * POST /prever-falta — API Flask (Modelo 1)
- * Calcula a probabilidade de a pessoa faltar à consulta. Usada ao agendar e na aba IA – Risco de falta.
- * Erros esperados: 400 (faltou campo).
+ * Calcula a pontuação de risco (0 a 1) de a pessoa faltar à consulta. Usada ao agendar e na aba IA – Risco de falta.
+ * Erros esperados: 400 { erro } (campo ausente ou fora da faixa, ex.: idade fora de 18 a 120).
  */
 export async function preverFalta(dados: PrevisaoFaltaEntrada): Promise<PrevisaoFalta> {
   if (FLASK_URL) {
-    const resposta = await requisitar(`${FLASK_URL}/prever-falta`, "FLASK", { method: "POST", body: JSON.stringify(dados) });
+    const resposta = await requisitar(`${FLASK_URL}/prever-falta`, "FLASK", { method: "POST", body: JSON.stringify(montarCorpoPrevisao(dados)) });
     return converterPrevisao(await resposta.json());
   }
   // Modo demonstração (simulação do protótipo): antecedência de 7 dias ou mais → faixa alta (0,60–0,95);
@@ -77,11 +124,11 @@ export async function preverFalta(dados: PrevisaoFaltaEntrada): Promise<Previsao
  * POST /verificar-urgencia — API Flask (Modelo 2)
  * Confere se um caso que deu verde ou azul pode ser urgente. Usada no fim da orientação e na aba IA – Verificação de urgência.
  * Regra: o resultado só pode ELEVAR a cor (verde/azul → amarelo), nunca baixar. Quem aplica é a orientação.
- * Erros esperados: 400 (faltou campo).
+ * Erros esperados: 400 { erro } (campo ausente ou fora da faixa).
  */
 export async function verificarUrgencia(dados: VerificacaoUrgenciaEntrada): Promise<VerificacaoUrgenciaSaida> {
   if (FLASK_URL) {
-    const resposta = await requisitar(`${FLASK_URL}/verificar-urgencia`, "FLASK", { method: "POST", body: JSON.stringify(dados) });
+    const resposta = await requisitar(`${FLASK_URL}/verificar-urgencia`, "FLASK", { method: "POST", body: JSON.stringify(montarCorpoUrgencia(dados)) });
     return converterUrgencia(await resposta.json());
   }
   // Modo demonstração (regra do protótipo): urgente quando dor >= 7 e idade >= 65.
