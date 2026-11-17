@@ -1,7 +1,7 @@
 /**
  * Página: aba Cidadão (/simulador/cidadao)
  * Mostra o celular do cidadão no centro (moldura com topo, tela aberta e barra inferior) e, ao lado,
- * o painel de explicação da tela que está aberta no celular.
+ * o painel "Perfis para testar" e o painel de explicação da tela que está aberta no celular.
  * Veio do protótipo: LayoutCidadao (as telas ficam em src/pages/simulador/cidadao).
  * Endpoints: os de cada tela do celular (listados no painel).
  * Estados: tratados em cada tela do celular.
@@ -10,6 +10,7 @@ import { useLocation } from 'react-router-dom';
 import Celular from '../../../components/celular/Celular';
 import LayoutAba from '../../../components/LayoutAba';
 import PainelExplicacao from '../../../components/PainelExplicacao';
+import PerfisTeste from '../../../components/PerfisTeste';
 import { explicacaoDaTela } from '../../../data/explicacoesCidadao';
 import { BASE_CELULAR } from '../../../services/navegacao';
 
@@ -21,7 +22,14 @@ export default function AbaCidadao() {
   const explicacao = explicacaoDaTela(tela);
 
   return (
-    <LayoutAba explicacao={<PainelExplicacao {...explicacao} />}>
+    <LayoutAba
+      explicacao={
+        <div className="flex flex-col gap-4">
+          <PerfisTeste />
+          <PainelExplicacao {...explicacao} />
+        </div>
+      }
+    >
       <Celular />
     </LayoutAba>
   );

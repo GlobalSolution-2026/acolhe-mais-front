@@ -2,7 +2,7 @@
  * Página: aba Recepção UBS (/simulador/recepcao)
  * Painel largo da recepção (no lugar do celular): escolha da UBS, abas internas (Agenda, Balcão,
  * Pendentes, Lista do dia e Indicadores, com NavLink + Outlet) e os botões do modo demonstração.
- * Ao lado, o painel de explicação da aba interna aberta.
+ * Ao lado, o painel "Perfis para testar" (Cartões SUS para o balcão) e o de explicação da aba interna aberta.
  * Veio do protótipo: LayoutRecepcao + LayoutCompartilhado (seletor da UBS) + ModoDemonstracao.
  * Endpoints: GET /unidades (API Java, lista de UBS do seletor). Cada aba interna chama os seus.
  * Estados: carregando, erro e vazio na lista de UBS. Login da recepção: demonstração.
@@ -15,6 +15,7 @@ import LayoutAba from '../../../components/LayoutAba';
 import Loading from '../../../components/Loading';
 import MensagemErro from '../../../components/MensagemErro';
 import PainelExplicacao from '../../../components/PainelExplicacao';
+import PerfisTeste from '../../../components/PerfisTeste';
 import SeloDemonstracao from '../../../components/SeloDemonstracao';
 import ModoDemonstracaoRecepcao from '../../../components/recepcao/ModoDemonstracaoRecepcao';
 import { useSimulador } from '../../../context/useSimulador';
@@ -39,7 +40,14 @@ export default function AbaRecepcao() {
   const tela = pathname.split('/')[3] ?? 'agenda';
 
   return (
-    <LayoutAba explicacao={<PainelExplicacao {...explicacaoRecepcao(tela)} />}>
+    <LayoutAba
+      explicacao={
+        <div className="flex flex-col gap-4">
+          <PerfisTeste />
+          <PainelExplicacao {...explicacaoRecepcao(tela)} />
+        </div>
+      }
+    >
       <div className="flex flex-col gap-4">
         <section className="flex flex-col gap-4 rounded-xl border border-borda bg-branco p-4 shadow-leve">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
