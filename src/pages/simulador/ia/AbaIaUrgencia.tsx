@@ -91,7 +91,7 @@ export default function AbaIaUrgencia() {
             'Métrica principal: recall da classe urgente. O limiar foi ajustado para baixo de propósito, porque deixar passar um caso urgente (falso negativo) é o erro perigoso.',
             'Na orientação, trauma só é perguntado na dor de cabeça (nas outras queixas vai "não"); a dor é perguntada em todas.',
           ]}
-          endpoints={[{ metodo: 'POST', rota: '/verificar-urgencia', api: 'FLASK' }]}
+          tela="ia-urgencia"
         />
       }
     >

@@ -38,11 +38,7 @@ export default function AbaStatus() {
             'O Render gratuito "dorme" depois de um tempo sem uso: a primeira chamada pode levar até um minuto.',
             'Lista do dia, ofertas de vaga, orientação salva e ficha de saúde ficam só no front por enquanto.',
           ]}
-          endpoints={[
-            { metodo: 'GET', rota: '/unidades', api: 'JAVA' },
-            { metodo: 'GET', rota: '/status', api: 'FLASK' },
-            { metodo: 'GET', rota: `/ws/${CEP_TESTE}/json/`, api: 'VIACEP' },
-          ]}
+          tela="status"
         />
       }
     >
