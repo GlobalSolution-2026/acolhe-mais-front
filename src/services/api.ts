@@ -25,10 +25,13 @@ import { podeVincular } from "./balcao";
 import { ErroApi, falhar, requisitar, simular } from "./http";
 import { montarEntradaPrevisao, preverFaltaSemTravar } from "./ia";
 import { acoesPresenca, listaDoDiaAberta, MENSAGEM_LISTA_SO_DIA_UTIL, podeCancelar, segundosRestantesOferta } from "./regrasAgendamento";
-import { liberarConsulta } from "./simulacao";
+import { finalizarOferta, liberarConsulta } from "./simulacao";
 
 /** URL da API Java; vazia = modo demonstração. */
 export const API_URL: string | undefined = import.meta.env.VITE_API_URL || undefined;
+
+/** Mensagem do 409 quando a oferta de vaga da lista do dia venceu ou foi repassada. */
+const MENSAGEM_OFERTA_VENCIDA = "Esta oferta venceu ou foi repassada. Confira seus avisos.";
 
 /** Mensagem do 409 ao agendar (a mesma no mock e na API real, para a tela não depender do texto da API). */
 export const MENSAGEM_HORARIO_OCUPADO = "Este horário acabou de ser ocupado. Escolha outro.";
@@ -341,9 +344,17 @@ export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consul
     // O banco só tem as orientações 1 a 5 da carga de teste; mandar o número do mock quebraria a FK
     // com ACM_ORIENTACAO e a API devolveria 400. Quando a orientação for salva na API, enviar o id dela.
     const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao: null, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
+    // Oferta da lista do dia (só no front): confere antes de gravar, como no modo demonstração.
+    if (dados.idOferta && !ofertaValida(obterStore().obterEstado(), dados.idOferta, horario.idHorario, cidadao.idCidadao)) {
+      falhar({ status: 409, mensagem: MENSAGEM_OFERTA_VENCIDA });
+    }
     try {
       const resposta = await requisitar(`${API_URL}/consultas`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
-      return await resposta.json();
+      const consulta: Consulta = await resposta.json();
+      // DEMONSTRAÇÃO: a consulta foi gravada na API; a oferta vira ACEITA e a pessoa sai da lista do dia no front.
+      const idOferta = dados.idOferta;
+      if (idOferta) obterStore().atualizarEstado((e) => finalizarOferta(e, idOferta, "ACEITA", agora()));
+      return consulta;
     } catch (erro) {
       // 409: a tela mostra sempre o mesmo texto, qualquer que seja o da API.
       if (erro instanceof ErroApi && erro.status === 409) throw new ErroApi(MENSAGEM_HORARIO_OCUPADO, 409);
@@ -351,6 +362,16 @@ export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consul
     }
   }
   return simular("POST", "/consultas", "JAVA", () => agendarNoMock(dados), 201);
+}
+
+/**
+ * A oferta ainda pode ser aceita: está pendente, dentro dos 30 min, é deste horário
+ * e a entrada da lista do dia é deste cidadão.
+ */
+function ofertaValida(e: EstadoSimulador, idOferta: number, idHorario: number, idCidadao: number): boolean {
+  const oferta = e.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === idHorario && o.status === "PENDENTE");
+  const entrada = e.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
+  return !!oferta && !!entrada && entrada.idCidadao === idCidadao && segundosRestantesOferta(oferta, agora()) > 0;
 }
 
 /** Agenda no mock, com as mesmas validações da API Java (404 e 409). */
@@ -386,8 +407,8 @@ async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrienta
     }
     const oferta = atual.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === horario.idHorario && o.status === "PENDENTE");
     const entrada = atual.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
-    if (idOferta && (!oferta || !entrada || entrada.idCidadao !== cidadao.idCidadao || segundosRestantesOferta(oferta, agora()) === 0)) {
-      falhar({ status: 409, mensagem: "Esta oferta venceu ou foi repassada. Confira seus avisos." });
+    if (idOferta && !ofertaValida(atual, idOferta, horario.idHorario, cidadao.idCidadao)) {
+      falhar({ status: 409, mensagem: MENSAGEM_OFERTA_VENCIDA });
     }
     nova.idConsulta = proximoId(atual.consultas.map((c) => c.idConsulta));
     return {
@@ -535,6 +556,8 @@ export async function incluirNaListaDoDia(dados: {
 
 /**
  * A recepção registra que a pessoa aceitou a vaga por telefone e agenda a consulta.
+ * A oferta e a entrada da lista ficam no front; o cidadão e o horário vêm de GET /cidadaos/{id}
+ * e GET /unidades/{id}/horarios (da API quando ligada), para o POST /consultas usar dados do banco.
  * Regra: a oferta precisa estar pendente e dentro do prazo de 30 min.
  */
 // DEMONSTRAÇÃO: não existe na API Java (o agendamento em si usa POST /consultas)
@@ -542,11 +565,12 @@ export async function aceitarOfertaPorTelefone(idOferta: number): Promise<Consul
   const e = obterStore().obterEstado();
   const oferta = e.ofertas.find((o) => o.idOferta === idOferta && o.status === "PENDENTE");
   const entrada = e.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
-  const horario = e.horarios.find((h) => h.idHorario === oferta?.idHorario);
-  const cidadao = e.cidadaos.find((c) => c.idCidadao === entrada?.idCidadao);
-  if (!oferta || segundosRestantesOferta(oferta, agora()) === 0 || !entrada || !horario || !cidadao) {
+  if (!oferta || segundosRestantesOferta(oferta, agora()) === 0 || !entrada || entrada.idCidadao === null) {
     falhar({ status: 409, mensagem: "Oferta indisponível." });
   }
+  const [cidadao, horarios] = await Promise.all([buscarCidadao(entrada.idCidadao), listarHorarios(oferta.idUnidade)]);
+  const horario = horarios.find((h) => h.idHorario === oferta.idHorario);
+  if (!horario) falhar({ status: 409, mensagem: "Oferta indisponível." });
   return agendarConsulta({ horario, cidadao, idOrientacao: entrada.idOrientacao, idOferta });
 }
 
