@@ -99,7 +99,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     regras: [
       "Cartão SUS com 15 números, celular com DDD, nascimento no passado e senha com pelo menos 6 caracteres.",
       "RN21: quem foi cadastrado no balcão cria a conta com o mesmo Cartão SUS e mantém as consultas.",
-      "Se o Cartão SUS já tem conta, erro 409: “Já existe conta com este Cartão SUS. Use Entrar.”",
+      "Se o Cartão SUS já tem conta com senha, erro 409 e a tela pede para usar Entrar.",
     ],
   },
   agendar: {

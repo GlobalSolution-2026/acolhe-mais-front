@@ -68,7 +68,7 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
     endpoints: [
       {
         metodo: "POST", rota: "/cidadaos",
-        descricao: "Cadastra: conta com senha (Criar conta) ou cadastro sem senha no balcão (409 se o Cartão SUS já existe).",
+        descricao: "Cadastra: conta com senha (Criar conta) ou cadastro sem senha no balcão. RN21: conta com o CNS de um cadastro do balcão completa esse cadastro; 409 se o Cartão SUS já tem conta.",
         telas: ["cidadao/criar-conta", "recepcao/agenda", "recepcao/balcao"],
       },
       {
