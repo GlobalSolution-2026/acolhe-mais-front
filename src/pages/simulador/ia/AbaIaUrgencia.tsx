@@ -1,7 +1,8 @@
 /**
  * Página: aba IA – Verificação de urgência (/simulador/ia-urgencia)
  * Tela de "admin" do Modelo 2: formulário com idade, sexo, trauma, dor de 0 a 10 (useWatch mostra o valor)
- * e estado mental. Mostra se o caso é urgente, a probabilidade e o efeito na orientação, destacando a
+ * e estado mental, ou "Sortear caso de exemplo" (preenche com um caso de data/casosUrgencia.ts).
+ * Mostra se o caso é urgente, a probabilidade e o efeito na orientação, destacando a
  * regra "só pode elevar" com exemplos lado a lado.
  * Veio de: planejamento do grupo (não há tela equivalente no protótipo).
  * Endpoints: POST /verificar-urgencia (API Flask).
@@ -9,7 +10,7 @@
  */
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight, FiShuffle } from 'react-icons/fi';
 import BarraProbabilidade from '../../../components/ia/BarraProbabilidade';
 import CampoFormulario from '../../../components/CampoFormulario';
 import LayoutAba from '../../../components/LayoutAba';
@@ -17,6 +18,7 @@ import MensagemErro from '../../../components/MensagemErro';
 import PainelExplicacao from '../../../components/PainelExplicacao';
 import SeloDemonstracao from '../../../components/SeloDemonstracao';
 import SeloGravidade from '../../../components/SeloGravidade';
+import { CASOS_URGENCIA, type CasoUrgencia } from '../../../data/casosUrgencia';
 import { FLASK_URL, verificarUrgencia } from '../../../services/ia';
 import type { VerificacaoUrgenciaSaida } from '../../../types';
 import type { Cor } from '../../../types/orientacao';
@@ -31,6 +33,8 @@ interface FormUrgencia {
   estadoMental: 'ALERTA' | 'ALTERADO';
 }
 
+const BOTAO_CONTORNO =
+  'flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-borda bg-branco px-5 font-bold text-primaria shadow-leve hover:bg-mentaSuave';
 const SELECT = 'min-h-12 w-full rounded-xl border border-borda bg-branco px-4 text-texto outline-none focus:ring-2 focus:ring-primaria';
 
 /** Um exemplo da regra "só eleva": cor das regras → resposta da IA → cor final. */
@@ -51,13 +55,33 @@ function Exemplo({ antes, ia, depois, explicacao }: { antes: Cor; ia: string; de
 
 /** Aba IA – Verificação de urgência (Modelo 2). */
 export default function AbaIaUrgencia() {
-  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormUrgencia>({
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormUrgencia>({
     defaultValues: { idade: '', sexo: '', trauma: 'NAO', nrDor: '0', estadoMental: 'ALERTA' },
   });
   // useWatch: mostra a nota da dor enquanto a pessoa arrasta a barra.
   const dor = useWatch({ control, name: 'nrDor' });
   const [resultado, setResultado] = useState<VerificacaoUrgenciaSaida | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Caso de exemplo sorteado (mostrado embaixo do formulário).
+  const [sorteado, setSorteado] = useState<CasoUrgencia | null>(null);
+
+  /** Sorteia um caso de exemplo (diferente do atual) e preenche o formulário com ele. */
+  const sortear = () => {
+    const opcoes = CASOS_URGENCIA.filter((c) => c !== sorteado);
+    const caso = opcoes[Math.floor(Math.random() * opcoes.length)];
+    if (!caso) return;
+    const e = caso.entrada;
+    reset({
+      idade: String(e.idade),
+      sexo: e.sexo,
+      trauma: e.trauma ? 'SIM' : 'NAO',
+      nrDor: String(e.nrDor),
+      estadoMental: e.estadoMentalAlerta ? 'ALERTA' : 'ALTERADO',
+    });
+    setSorteado(caso);
+    setResultado(null);
+    setErro(null);
+  };
 
   /** Chama o Modelo 2 com os dados do formulário. */
   const enviar = handleSubmit(async (v) => {
@@ -143,10 +167,20 @@ export default function AbaIaUrgencia() {
               <div className="flex justify-between text-sm text-textoSuave"><span>0 = sem dor</span><span>10 = pior dor</span></div>
             </div>
           </div>
-          <button type="submit" disabled={isSubmitting}
-            className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-primaria px-5 font-bold text-branco shadow-leve hover:bg-primariaEscura disabled:cursor-not-allowed disabled:opacity-60">
-            {isSubmitting ? 'Verificando...' : 'Verificar urgência'}
-          </button>
+          <div className="grid gap-2 md:grid-cols-2">
+            <button type="button" onClick={sortear} className={BOTAO_CONTORNO}>
+              <FiShuffle aria-hidden /> Sortear caso de exemplo
+            </button>
+            <button type="submit" disabled={isSubmitting}
+              className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl bg-primaria px-5 font-bold text-branco shadow-leve hover:bg-primariaEscura disabled:cursor-not-allowed disabled:opacity-60">
+              {isSubmitting ? 'Verificando...' : 'Verificar urgência'}
+            </button>
+          </div>
+          {sorteado && (
+            <p className="text-sm text-textoSuave">
+              Caso sorteado: <span className="font-semibold text-texto">{sorteado.nome}</span> · {sorteado.descricao}
+            </p>
+          )}
         </form>
 
         {erro && <MensagemErro mensagem={erro} />}
