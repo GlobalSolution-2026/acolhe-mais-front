@@ -26,7 +26,7 @@ export default function PerfisTeste() {
     setEntrando(idCidadao);
     try {
       const cidadao = await entrar(nrCns, SENHA_TESTE);
-      definirCidadaoAtual(cidadao.idCidadao);
+      definirCidadaoAtual(cidadao.idCidadao, cidadao.nmCidadao);
       navigate(`${BASE_CELULAR}/inicio`);
     } catch (e) {
       setErro(mensagemDoErro(e));

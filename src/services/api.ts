@@ -508,20 +508,23 @@ export async function vincularOrientacao(idOrientacao: number, idCidadao: number
 
 /**
  * A recepção coloca o cidadão na lista do dia da UBS.
+ * O cidadão vem de quem chama (busca ou cadastro no balcão, pela API ou pelo mock): com a API ligada,
+ * a pessoa pode não existir no mock, então a função não o procura lá.
  * Regras: só em dia útil; a mesma pessoa não entra duas vezes.
  */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function incluirNaListaDoDia(dados: { idUnidade: number; idCidadao: number; idOrientacao: number; dsCor: EntradaListaDoDia["dsCor"] }): Promise<EntradaListaDoDia> {
+export async function incluirNaListaDoDia(dados: {
+  idUnidade: number; cidadao: Pick<Cidadao, "idCidadao" | "nmCidadao">; idOrientacao: number; dsCor: EntradaListaDoDia["dsCor"];
+}): Promise<EntradaListaDoDia> {
+  const { cidadao } = dados;
   return simular("POST", "lista do dia (só no front)", "FRONT", () => {
     const s = obterStore();
     const e = s.obterEstado();
-    const cidadao = e.cidadaos.find((c) => c.idCidadao === dados.idCidadao);
-    if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
     if (!listaDoDiaAberta(agora())) falhar({ status: 409, mensagem: MENSAGEM_LISTA_SO_DIA_UTIL });
-    if (e.listaDoDia.some((x) => x.idCidadao === dados.idCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, mensagem: "Este cidadão já está na lista do dia." });
+    if (e.listaDoDia.some((x) => x.idCidadao === cidadao.idCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, mensagem: "Este cidadão já está na lista do dia." });
     const entrada: EntradaListaDoDia = {
       idEntrada: proximoId(e.listaDoDia.map((x) => x.idEntrada)),
-      idCidadao: dados.idCidadao, idOrientacao: dados.idOrientacao, idUnidade: dados.idUnidade,
+      idCidadao: cidadao.idCidadao, idOrientacao: dados.idOrientacao, idUnidade: dados.idUnidade,
       nmCidadao: cidadao.nmCidadao, dsCor: dados.dsCor, dtEntrada: agora().toISOString(),
       flPrioridade: false, flCidadao: false, status: "AGUARDANDO",
     };

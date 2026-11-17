@@ -30,12 +30,15 @@ export interface SimuladorValor {
   trocarQueixa: (codigoQueixa: CodigoQueixa) => void;
   /** Guarda o resultado final (cor, destino e código da orientação). */
   definirResultado: (resultado: ResultadoFinal) => void;
-  /** Guarda quem entrou no celular (login ou conta nova) e vincula a entrada da lista do dia feita sem login. */
-  definirCidadaoAtual: (idCidadao: number) => void;
+  /**
+   * Guarda quem entrou no celular (login ou conta nova) e vincula a entrada da lista do dia feita sem login.
+   * nmCidadao vem do cadastro devolvido pela API (com a API ligada, o mock pode não ter esta pessoa).
+   */
+  definirCidadaoAtual: (idCidadao: number, nmCidadao?: string) => void;
   /** Sai da conta no celular. */
   sair: () => void;
-  /** Coloca o cidadão do celular na lista do dia da UBS (demonstração). */
-  entrarNaListaDoDia: (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number) => void;
+  /** Coloca o cidadão do celular na lista do dia da UBS (demonstração); nmCidadao vem do cadastro da API. */
+  entrarNaListaDoDia: (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number, nmCidadao?: string) => void;
   /** Resposta do cidadão a uma oferta de vaga (demonstração). Recusada/vencida: a vaga vai para o próximo. */
   responderOferta: (idOferta: number, resposta: "ACEITA" | "RECUSADA" | "EXPIRADA") => void;
   /** Troca a UBS mostrada no painel da recepção. */
