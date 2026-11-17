@@ -13,7 +13,7 @@ export const EXPLICACOES_RECEPCAO: Record<string, ExplicacaoTela> = {
       "Mostra os horários da UBS no dia escolhido, com quem está marcado, o risco de falta (Modelo 1) e os botões de presença e falta. Também permite agendar na hora para quem chegou sem celular.",
     regras: [
       "Presença só no dia da consulta; falta só depois do horário.",
-      "Risco ALTO a partir de 60% de probabilidade de falta.",
+      "Risco ALTO a partir da pontuação de risco de 0,60.",
       "Selo \"Fez orientação hoje\": lembra a equipe de que a pessoa procurou ajuda pelo app.",
       "Quem chega sem celular é cadastrado no balcão (sem senha) e pode criar a conta depois (RN21).",
     ],
