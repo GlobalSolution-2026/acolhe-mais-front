@@ -335,11 +335,14 @@ export interface AgendamentoEntrada {
  * Erros esperados: 400, 404 (horário ou cidadão não existe), 409 (horário acabou de ser ocupado).
  */
 export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consulta> {
-  const { horario, cidadao, idOrientacao } = dados;
+  const { horario, cidadao } = dados;
   if (API_URL) {
     const consultas = await listarConsultas();
     const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, consultas, agora()));
-    const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
+    // idOrientacao vai null: a orientação ainda só existe no front (demonstração), com o número do mock.
+    // O banco só tem as orientações 1 a 5 da carga de teste; mandar o número do mock quebraria a FK
+    // com ACM_ORIENTACAO e a API devolveria 400. Quando a orientação for salva na API, enviar o id dela.
+    const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao: null, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
     try {
       const resposta = await requisitar(`${API_URL}/consultas`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
       return await resposta.json();
