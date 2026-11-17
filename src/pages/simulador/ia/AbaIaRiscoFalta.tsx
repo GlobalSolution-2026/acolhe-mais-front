@@ -2,7 +2,7 @@
  * Página: aba IA – Risco de falta (/simulador/ia-risco-falta)
  * Tela de "admin" do Modelo 1: formulário com os atributos do modelo (idade, sexo, antecedência, dia da
  * semana, SMS recebido e faltas anteriores) ou "Sortear consulta da agenda" (preenche com uma consulta do mock).
- * Mostra a probabilidade (barra), o risco pelo limiar de 0,60, a consequência na solução e, para consulta
+ * Mostra a pontuação de risco (barra), o risco pelo limiar de 0,60, a consequência na solução e, para consulta
  * que já aconteceu (REALIZADA ou FALTA), se o modelo acertou.
  * Veio de: planejamento do grupo (não há tela equivalente no protótipo).
  * Endpoints: POST /prever-falta (API Flask).
@@ -35,7 +35,15 @@ interface FormRisco {
   faltasAnteriores: string;
 }
 
-const DIAS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+// Só dias úteis: a agenda da UBS não tem fim de semana e a API Flask não aceita sábado nem domingo.
+// O valor segue o Date.getDay (1 = segunda ... 5 = sexta); o serviço converte para o formato da API.
+const DIAS = [
+  { valor: 1, nome: 'Segunda-feira' },
+  { valor: 2, nome: 'Terça-feira' },
+  { valor: 3, nome: 'Quarta-feira' },
+  { valor: 4, nome: 'Quinta-feira' },
+  { valor: 5, nome: 'Sexta-feira' },
+];
 const SELECT = 'min-h-12 w-full rounded-xl border border-borda bg-branco px-4 text-texto outline-none focus:ring-2 focus:ring-primaria';
 const BOTAO_PRIMARIO =
   'flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primaria px-5 font-bold text-branco shadow-leve hover:bg-primariaEscura disabled:cursor-not-allowed disabled:opacity-60';
@@ -107,11 +115,13 @@ export default function AbaIaRiscoFalta() {
       explicacao={
         <PainelExplicacao
           titulo="IA – Risco de falta (Modelo 1)"
-          oQueFaz="Estima a probabilidade de a pessoa faltar à consulta. Na solução, roda no momento do agendamento e define quando a UBS pede a confirmação de presença."
+          oQueFaz="Calcula uma pontuação de risco (0 a 1) de a pessoa faltar à consulta. Na solução, roda no momento do agendamento e define quando a UBS pede a confirmação de presença."
           regras={[
             'Base: Medical Appointment No Shows (Kaggle), 110.527 consultas de Vitória-ES.',
             'Colunas clínicas e Bolsa Família ficaram fora do modelo, por coerência com a LGPD (dado sensível que o app não precisa).',
             'Base desbalanceada (cerca de 20% de faltas): por isso as métricas vão além da acurácia (recall, F1 e ROC-AUC).',
+            'A saída é uma pontuação de risco de 0 a 1, não uma probabilidade de verdade: o treino usou class_weight="balanced" para compensar o desbalanceamento.',
+            'Regra do app: só maiores de 18 anos (idade de 18 a 120). O dia da semana vai de segunda a sexta, porque a agenda só tem dias úteis.',
             'Risco ALTO a partir de 0,60: pedido de confirmação 3 dias úteis antes, com lembrete. BAIXO: 2 dias úteis antes.',
             'Limitações desta versão: smsRecebido vai sempre false no agendamento (o lembrete ainda não foi enviado) e o bairro não é enviado (a API usa "OUTROS"). Ideia futura: um modelo por unidade.',
           ]}
@@ -128,7 +138,7 @@ export default function AbaIaRiscoFalta() {
 
         <form onSubmit={enviar} noValidate className="flex flex-col gap-4 rounded-xl border border-borda bg-branco p-4 shadow-leve">
           <div className="grid gap-4 md:grid-cols-2">
-            <CampoFormulario id="idadeIa" label="Idade" numerico erro={errors.idade} registro={register('idade', inteiro(0, 120, 'a idade'))} />
+            <CampoFormulario id="idadeIa" label="Idade" numerico erro={errors.idade} registro={register('idade', inteiro(18, 120, 'a idade'))} />
             <div className="flex flex-col gap-1">
               <label htmlFor="sexoIa" className="font-semibold">Sexo</label>
               <select id="sexoIa" className={SELECT} aria-invalid={!!errors.sexo} {...register('sexo', { required: 'Informe o sexo.' })}>
@@ -143,7 +153,7 @@ export default function AbaIaRiscoFalta() {
             <div className="flex flex-col gap-1">
               <label htmlFor="diaSemanaIa" className="font-semibold">Dia da semana da consulta</label>
               <select id="diaSemanaIa" className={SELECT} {...register('diaSemana')}>
-                {DIAS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+                {DIAS.map((d) => <option key={d.valor} value={d.valor}>{d.nome}</option>)}
               </select>
             </div>
             <CampoFormulario id="faltasIa" label="Faltas anteriores" numerico erro={errors.faltasAnteriores}
@@ -172,7 +182,7 @@ export default function AbaIaRiscoFalta() {
 
         {resultado && (
           <section className="flex flex-col gap-4 rounded-xl border border-borda bg-branco p-4 shadow-leve" aria-live="polite">
-            <BarraProbabilidade valor={resultado.vlProbFalta} limiar={LIMIAR_RISCO_ALTO} rotuloLimiar="Limiar de risco ALTO" rotulo="Probabilidade de falta" />
+            <BarraProbabilidade valor={resultado.vlProbFalta} limiar={LIMIAR_RISCO_ALTO} rotuloLimiar="Limiar de risco ALTO" rotulo="Pontuação de risco de falta" />
             <p className="flex flex-wrap items-center gap-2 text-lg font-extrabold">
               Risco:
               <span className={`rounded-full px-3 py-1 ${resultado.dsRiscoFalta === 'ALTO' ? 'bg-primaria text-branco' : 'bg-mentaSuave text-primaria'}`}>
