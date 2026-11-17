@@ -1,13 +1,17 @@
 /**
- * Conta de exemplo do modo demonstração (Cartão SUS + senha) e ficha de saúde dela.
- * Usada enquanto POST /cidadaos/login ainda não existe na API Java.
+ * Contas com senha do modo demonstração e ficha de saúde da conta principal.
+ * As senhas são as mesmas da carga de teste do banco: os perfis de teste entram nos dois modos.
  */
 import type { CodigoDoencaBase, CredencialCidadao, FichaSaude } from "../types";
 
-/** DEMONSTRAÇÃO: conta de exemplo exibida no Modo demonstração. */
-export const CONTA_DEMO = { idCidadao: 1, nrCns: "111222233334444", dsSenha: "acolhe123" } as const;
+/** Senha das contas de teste (Maria, Pedro e Carlos), igual à da carga do banco. */
+export const SENHA_TESTE = "acolhe123";
 
-export const credenciaisIniciais: CredencialCidadao[] = [{ idCidadao: CONTA_DEMO.idCidadao, dsSenha: CONTA_DEMO.dsSenha }];
+/** DEMONSTRAÇÃO: conta principal (Maria Silva) exibida no Modo demonstração. */
+export const CONTA_DEMO = { idCidadao: 1, nrCns: "111222233334444", dsSenha: SENHA_TESTE } as const;
+
+/** Credenciais do mock: só os cidadãos com tpAcesso SENHA na carga do banco (1 Maria, 4 Pedro e 6 Carlos). */
+export const credenciaisIniciais: CredencialCidadao[] = [1, 4, 6].map((idCidadao) => ({ idCidadao, dsSenha: SENHA_TESTE }));
 
 export const DOENCAS_BASE: { cd: CodigoDoencaBase; nm: string }[] = [
   { cd: "DIABETES", nm: "Diabetes" },
