@@ -124,15 +124,15 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
     nome: "IA (Flask)",
     api: "FLASK",
     endpoints: [
-      { metodo: "GET", rota: "/status", descricao: "Confere se a API de IA está no ar.", telas: ["status"] },
+      { metodo: "GET", rota: "/status", descricao: "Confere se a API de IA está no ar e quais modelos estão carregados.", telas: ["status"] },
       {
         metodo: "POST", rota: "/prever-falta",
-        descricao: "Modelo 1: probabilidade de falta, gravada na consulta ao agendar (risco ALTO a partir de 0,60).",
+        descricao: "Modelo 1: pontuação de risco de falta (0 a 1) e risco alto/baixo, gravados na consulta ao agendar (risco ALTO a partir de 0,60).",
         telas: ["cidadao/agendar", "recepcao/agenda", "recepcao/balcao", "recepcao/lista-do-dia", "ia-risco-falta"],
       },
       {
         metodo: "POST", rota: "/verificar-urgencia",
-        descricao: "Modelo 2: confere se um caso verde ou azul pode ser urgente; só eleva a cor.",
+        descricao: "Modelo 2: pontuação de urgência (0 a 1) e se o caso verde ou azul é urgente (limiar 0,30); só eleva a cor.",
         telas: ["cidadao/resultado", "recepcao/balcao", "ia-urgencia"],
       },
     ],
