@@ -1,19 +1,17 @@
 /**
  * Página: aba Status das APIs (/simulador/status)
  * Um card por API (Java, Flask e ViaCEP) com situação (Online, Fora do ar, Não configurada ou Demonstração),
- * URL, tempo de resposta e horário da última verificação; a lista de endpoints por controller com a tela
- * onde cada um é usado; e o painel de requisições ao vivo.
+ * URL, tempo de resposta e horário da última verificação; e a lista de endpoints por controller com as telas
+ * que chamam cada um. As requisições ao vivo ficam no balão do canto da tela (BalaoRequisicoes), em todas as abas.
  * Veio de: página de status do simulador do Lobo-guará Tech (não há tela equivalente no protótipo).
  * Endpoints: GET /unidades (API Java), GET /status (API Flask) e GET /ws/01310100/json/ (ViaCEP).
- * Estados: verificando, online, fora do ar (com a mensagem do erro), não configurada e demonstração;
- * painel de requisições vazio.
+ * Estados: verificando, online, fora do ar (com a mensagem do erro), não configurada e demonstração.
  */
 import { useState } from 'react';
 import { FiRefreshCw } from 'react-icons/fi';
 import LayoutAba from '../../../components/LayoutAba';
 import PainelExplicacao from '../../../components/PainelExplicacao';
 import CardApi from '../../../components/status/CardApi';
-import PainelRequisicoes from '../../../components/status/PainelRequisicoes';
 import TabelaEndpoints from '../../../components/status/TabelaEndpoints';
 import { API_URL, listarUnidades } from '../../../services/api';
 import { buscarEndereco, VIACEP_URL } from '../../../services/cep';
@@ -32,7 +30,7 @@ export default function AbaStatus() {
       explicacao={
         <PainelExplicacao
           titulo="Status das APIs"
-          oQueFaz="Mostra se cada API está no ar, quanto tempo demora para responder e as últimas chamadas feitas pelo simulador, reais ou de demonstração."
+          oQueFaz="Mostra se cada API está no ar, quanto tempo demora para responder e os endpoints que cada tela chama. As últimas chamadas aparecem no balão “Requisições”, no canto da tela."
           regras={[
             'Variável de ambiente vazia = API "Não configurada": o simulador usa os dados de exemplo (modo demonstração).',
             'O Render gratuito "dorme" depois de um tempo sem uso: a primeira chamada pode levar até um minuto.',
@@ -65,7 +63,6 @@ export default function AbaStatus() {
           <CardApi nome="ViaCEP" url={VIACEP_URL} rotaVerificacao={`GET /ws/${CEP_TESTE}/json/`} verificar={() => buscarEndereco(CEP_TESTE)} rodada={rodada} />
         </div>
 
-        <PainelRequisicoes />
         <TabelaEndpoints />
       </div>
     </LayoutAba>

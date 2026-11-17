@@ -1,5 +1,5 @@
 /**
- * Contexto do painel de requisições (aba Status das APIs).
+ * Contexto das requisições do simulador (mostradas no balão de requisições).
  * Fica separado do Provider por causa do React Refresh; o hook está em useRequisicoes.ts.
  */
 import { createContext } from "react";

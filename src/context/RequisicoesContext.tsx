@@ -1,6 +1,6 @@
 /**
  * Provider do painel de requisições: guarda as últimas chamadas feitas pelo front
- * (método, rota, API, status, tempo e se foi real ou demonstração) para a aba Status das APIs.
+ * (método, rota, API, status, tempo e se foi real ou demonstração) para o balão de requisições.
  * Quem registra cada chamada é services/http.ts (requisitar e simular).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
