@@ -1,6 +1,6 @@
 /**
  * Estado do modo demonstração do simulador (o "banco de dados" de mentira do front).
- * Enquanto a API Java não estiver no ar, os serviços leem e alteram este estado,
+ * Sem VITE_API_URL (modo demonstração), os serviços leem e alteram este estado,
  * que fica salvo no localStorage para sobreviver a um F5.
  */
 import type { Cidadao, Consulta, CredencialCidadao, EntradaListaDoDia, FichaSaude, Horario, OfertaVaga, Unidade } from "../types";

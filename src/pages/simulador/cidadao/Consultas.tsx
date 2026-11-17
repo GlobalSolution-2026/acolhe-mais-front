@@ -99,7 +99,7 @@ export default function Consultas() {
   const [erroAcao, setErroAcao] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
-  // Só as consultas de quem está logado. TODO: aguardando a API Java devolver idCidadao no ConsultaSaidaDTO.
+  // Só as consultas de quem está logado (o ConsultaSaidaDTO traz o idCidadao).
   const { dados, carregando, erro, recarregar } = useCarregar(
     async () => (await listarConsultas()).filter((c) => c.idCidadao === idCidadao),
     [idCidadao, estado.consultas],

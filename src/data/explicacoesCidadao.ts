@@ -206,7 +206,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     oQueFaz: "A pessoa atualiza celular, contato de recado e CEP.",
     regras: [
       "RF27: nome, Cartão SUS, nascimento e sexo só para leitura; para corrigir, procurar a recepção da UBS.",
-      "O PUT leva só os campos editáveis (DTO de atualização pedido à API Java).",
+      "O PUT leva só os campos editáveis (CidadaoAtualizacaoDTO da API Java).",
     ],
     endpoints: [
       { metodo: "GET", rota: "/cidadaos/{id}", api: "JAVA" },

@@ -8,8 +8,8 @@
  *   e espera 400 ms para imitar a rede (simular).
  * Ligar a API de verdade é só configurar a variável de ambiente.
  *
- * Endpoints pedidos ao colega do Java e ainda não feitos (o front já chama assim):
- * PUT /consultas/{id}/status, PUT /cidadaos/{id} só com contato, POST /cidadaos/login e GET /cidadaos?cns=.
+ * Ainda não aceito pela API Java: a RN21 (cadastro do balcão, BALCAO, virar conta com senha, SENHA).
+ * Hoje o POST /cidadaos devolve 409 para qualquer CNS já cadastrado; no modo demonstração a RN21 funciona.
  *
  * As funções marcadas com "DEMONSTRAÇÃO: não existe na API Java" ficam sempre no mock
  * (lista do dia, oferta de vaga, orientação salva, balcão e ficha de saúde).
@@ -118,7 +118,6 @@ export async function buscarUnidade(idUnidade: number): Promise<Unidade> {
 /**
  * GET /unidades/{idUnidade}/horarios — API Java
  * Lista os horários de uma UBS. Usada na tela "Horários" do celular e na agenda da Recepção.
- * Enquanto a API não devolver flOcupado, os horários reais aparecem como livres e o 409 do agendamento avisa.
  * Erros esperados: 404 (unidade não existe).
  */
 export async function listarHorarios(idUnidade: number): Promise<Horario[]> {
@@ -181,8 +180,8 @@ function cadastrarNoMock({ senha, ...dados }: CidadaoEntrada): Cidadao {
  * Cartão SUS; a conta completa esse cadastro e mantém as consultas já marcadas.
  * Erros esperados: 400 (senha curta ou dados inválidos), 409 (já existe conta com este CNS).
  */
-// TODO: a RN21 com a API real depende da API Java aceitar transformar um cadastro BALCAO em SENHA
-// (hoje o POST devolve 409 para qualquer CNS repetido). No modo demonstração ela já funciona.
+// RN21 com a API real: a API Java ainda não transforma um cadastro BALCAO em SENHA e devolve 409
+// para qualquer CNS repetido. No modo demonstração ela já funciona.
 export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">, senha: string): Promise<Cidadao> {
   const corpo = corpoCidadao({ ...dados, tpAcesso: "SENHA", senha });
   if (API_URL) {
@@ -229,7 +228,7 @@ export async function buscarCidadao(idCidadao: number): Promise<Cidadao> {
 
 /**
  * GET /cidadaos?cns={nrCns} — API Java
- * Busca o cidadão pelo Cartão SUS. Usada no balcão da Recepção.
+ * Busca o cidadão pelo Cartão SUS (filtro ?cns= da API, que devolve um cadastro só). Usada no balcão da Recepção.
  * @returns o cadastro, ou null quando não existe (404)
  */
 export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null> {
@@ -237,10 +236,7 @@ export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null
   try {
     if (API_URL) {
       const resposta = await requisitar(`${API_URL}/cidadaos?cns=${cns}`, "JAVA");
-      const json = (await resposta.json()) as Cidadao | Cidadao[];
-      // Enquanto o filtro ?cns= não existir na API, ela devolve a lista inteira: o front procura o CNS nela.
-      const cidadao = Array.isArray(json) ? json.find((c) => c.nrCns === cns) : json;
-      return cidadao ? converterCidadao(cidadao) : null;
+      return converterCidadao(await resposta.json());
     }
     return await simular("GET", `/cidadaos?cns=${cns}`, "JAVA", () => {
       const cidadao = obterStore().obterEstado().cidadaos.find((c) => c.nrCns === cns);
@@ -284,9 +280,9 @@ export async function atualizarCidadao(idCidadao: number, dados: CidadaoAtualiza
 
 /**
  * POST /cidadaos/login — API Java
- * Entra com Cartão SUS (15 números) e senha. Usada na tela "Entrar" do celular.
- * Enquanto o endpoint não existir na API, fica em demonstração com a conta de exemplo (data/contaDemo.ts).
- * Erros esperados: 401 (CNS ou senha incorretos, ou cadastro do balcão sem senha).
+ * Entra com Cartão SUS (15 números) e senha. Usada na tela "Entrar" do celular e no painel "Perfis para testar".
+ * No modo demonstração, as contas com senha são as de data/contaDemo.ts (as mesmas da carga do banco).
+ * Erros esperados: 401 (CNS ou senha incorretos, ou cadastro sem senha: BALCAO ou GOVBR).
  */
 export async function entrar(nrCns: string, senha: string): Promise<Cidadao> {
   const corpo: LoginEntrada = { nrCns: soNumeros(nrCns), senha };
