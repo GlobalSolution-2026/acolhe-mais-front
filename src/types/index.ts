@@ -2,8 +2,8 @@
  * Tipos do Acolhe+ (vieram do protótipo do grupo, com os nomes da API Java).
  * Os nomes seguem os DTOs da API Java (repositório Acolhe-Mais-Java): id = identificador,
  * nm = nome, ds = descrição, dt = data, nr = número, fl = flag (verdadeiro/falso), vl = valor, tp = tipo.
- * Campos marcados com "TODO: aguardando a API Java" ainda não vêm da API (pedidos ao colega);
- * no modo demonstração o mock preenche todos.
+ * Os campos obrigatórios aqui são os que a API sempre devolve; os que podem vir null estão como "| null".
+ * No modo demonstração o mock preenche todos.
  */
 import type { Cor } from "./orientacao";
 
@@ -27,12 +27,16 @@ export interface Horario {
   idUnidade: number;
   dtHorario: string; // ISO (a API manda sem fuso, no horário local)
   nrDuracaoMinuto: number;
-  // TODO: aguardando a API Java (flOcupado no HorarioSaidaDTO)
-  flOcupado?: boolean;
+  /** true quando já existe consulta ativa neste horário. */
+  flOcupado: boolean;
 }
 
-/** Forma de acesso do cidadão: conta com senha no app ou cadastro feito no balcão (sem senha). */
-export type TipoAcesso = "SENHA" | "BALCAO";
+/**
+ * Forma de acesso do cidadão: conta com senha no app, cadastro feito no balcão (sem senha)
+ * ou conta gov.br. GOVBR já existe no banco (carga de teste), mas o login pelo gov.br está previsto
+ * e ainda não existe: sem senha, POST /cidadaos/login devolve 401 para essas pessoas.
+ */
+export type TipoAcesso = "SENHA" | "BALCAO" | "GOVBR";
 
 /** Cadastro do cidadão. CidadaoSaidaDTO da API. CNS = Cartão Nacional de Saúde (Cartão SUS, 15 números). */
 export interface Cidadao {
@@ -77,22 +81,24 @@ export interface Consulta {
   dtHorario: string;
   nmCidadao: string;
   dsStatus: StatusConsulta;
-  // TODO: aguardando a API Java (campos pedidos no ConsultaSaidaDTO)
-  idHorario?: number;
-  idCidadao?: number;
-  idOrientacao?: number | null;
-  dtAgendamento?: string;
-  dtConfirmacao?: string | null;
-  dsCanalConfirmacao?: CanalConfirmacao | null;
-  vlProbFalta?: number | null;
-  dsRiscoFalta?: RiscoFalta | null;
+  idHorario: number;
+  idCidadao: number;
+  /** null quando a consulta não veio de uma orientação salva na API (ex.: balcão, ou orientação só do front). */
+  idOrientacao: number | null;
+  dtAgendamento: string;
+  /** Preenchidos só depois da confirmação. */
+  dtConfirmacao: string | null;
+  dsCanalConfirmacao: CanalConfirmacao | null;
+  /** null quando o Modelo 1 não respondeu no agendamento. */
+  vlProbFalta: number | null;
+  dsRiscoFalta: RiscoFalta | null;
 }
 
 /** Corpo do POST /consultas (ConsultaEntradaDTO). */
 export interface ConsultaEntrada {
   idHorario: number;
   idCidadao: number;
-  // TODO: aguardando a API Java (campos opcionais pedidos no ConsultaEntradaDTO)
+  /** Opcionais no ConsultaEntradaDTO: orientação de origem e o resultado do Modelo 1. */
   idOrientacao?: number | null;
   vlProbFalta?: number;
   dsRiscoFalta?: RiscoFalta;
@@ -129,6 +135,8 @@ export interface OfertaVaga {
   idOferta: number;
   idHorario: number;
   idUnidade: number;
+  /** Data e hora do horário oferecido, copiadas na hora da oferta (o horário pode ser da API, não do mock). */
+  dtHorario: string; // ISO
   idEntrada: number;
   nmCidadao: string;
   dtCriacao: string; // ISO

@@ -3,13 +3,58 @@
  * Gera uma agenda realista (consultas passadas, de hoje e futuras, com faltas e confirmações)
  * para as abas Cidadão, Recepção e IA terem o que mostrar sem a API Java.
  */
-import type { Cidadao, Consulta, EntradaListaDoDia, Horario } from "../types";
+import type { Cidadao, Consulta, EntradaListaDoDia, Horario, TipoAcesso } from "../types";
 import type { Orientacao } from "../types/orientacao";
 import { unidadesIniciais } from "./unidades";
 import { CONTA_DEMO } from "./contaDemo";
 import { CONFIRMACAO_RISCO_BAIXO_DIAS_UTEIS, PRAZO_FINAL_CONFIRMACAO_DIAS_UTEIS } from "./configuracoes";
 import { chaveDia, subtrairDiasUteis } from "../lib/datas";
 import { classificarRiscoFalta, inicioPedidoConfirmacao, prazoConfirmacao } from "../services/regrasAgendamento";
+
+/**
+ * Cidadãos 1 a 8: os mesmos da carga de teste do banco (Acolhe DML.sql), na mesma ordem dos ids.
+ * Assim, Cartão SUS, CPF e forma de acesso batem no modo demonstração e com a API Java ligada.
+ * Celular, contato de recado, CEP, sexo e nascimento também batem (gerados abaixo).
+ */
+const CIDADAOS_DA_CARGA: { nrCns: string; tpAcesso: TipoAcesso; nrCpf: string | null }[] = [
+  { nrCns: CONTA_DEMO.nrCns, tpAcesso: "SENHA", nrCpf: null }, // 1 Maria Silva (conta demo)
+  { nrCns: "222333344445555", tpAcesso: "GOVBR", nrCpf: "10000000002" }, // 2 João Souza
+  { nrCns: "333444455556666", tpAcesso: "BALCAO", nrCpf: null }, // 3 Sebastiana Ramos (sem contato)
+  { nrCns: "444555566667777", tpAcesso: "SENHA", nrCpf: null }, // 4 Pedro Lima
+  { nrCns: "555666677778888", tpAcesso: "GOVBR", nrCpf: "10000000005" }, // 5 Ana Beatriz (com recado)
+  { nrCns: "666777788889999", tpAcesso: "SENHA", nrCpf: null }, // 6 Carlos Nunes
+  { nrCns: "700000000000006", tpAcesso: "BALCAO", nrCpf: null }, // 7 Juliana Santos (só recado)
+  { nrCns: "700000000000007", tpAcesso: "GOVBR", nrCpf: "10000000008" }, // 8 José Oliveira
+];
+
+/**
+ * Deixa o histórico sorteado coerente com o painel "Perfis para testar" (data/perfisTeste.ts),
+ * como na carga do banco: Pedro (4) sem faltas e com risco BAIXO; Carlos (6) com consultas confirmadas.
+ * Altera a lista recebida (as consultas acabaram de ser criadas pela semente).
+ * @param consultas consultas geradas pela semente
+ * @param now "agora" da demonstração, em milissegundos
+ */
+function ajustarPerfisTeste(consultas: Consulta[], now: number): void {
+  for (const c of consultas) {
+    if (c.idCidadao === 4) {
+      // Pedro: falta vira presença e a probabilidade cai abaixo do limiar 0,60 (risco BAIXO).
+      if (c.dsStatus === "FALTA") c.dsStatus = "REALIZADA";
+      const prob = Number(Math.min((c.vlProbFalta ?? 0.3) * 0.5, 0.45).toFixed(2));
+      c.vlProbFalta = prob;
+      c.dsRiscoFalta = classificarRiscoFalta(prob);
+    }
+    if (c.idCidadao === 6 && c.dsStatus === "AGENDADA") {
+      // Carlos: as consultas que já estão no prazo de confirmação aparecem confirmadas pelo app.
+      const inicio = inicioPedidoConfirmacao(c)?.getTime();
+      const prazo = prazoConfirmacao(c)?.getTime();
+      if (inicio !== undefined && prazo !== undefined && inicio <= now && now <= prazo) {
+        c.dsStatus = "CONFIRMADA";
+        c.dtConfirmacao = new Date(Math.max(inicio, now - 30 * 60_000)).toISOString();
+        c.dsCanalConfirmacao = "APP";
+      }
+    }
+  }
+}
 
 export interface Semente {
   cidadaos: Cidadao[];
@@ -44,10 +89,12 @@ export function gerarSemente(horariosBase: Horario[], agora: Date = new Date()):
   const recadoIds = [7, 9, 11, 13, 15, 17, 31, 35, 41, 45, 49, 51, 55];
   // Telefones só com números (como a API Java guarda: VARCHAR2(11)); a tela formata.
   const telefone = (prefixo: string, i: number) => `119${prefixo}${String(i + 1).padStart(4, "0")}`;
-  // DEMONSTRAÇÃO: CNS de exemplo começam com 0 (nenhum CNS real começa assim) e não seguem padrão de teclado,
+  // DEMONSTRAÇÃO: os cidadãos 1 a 8 usam o CNS da carga do banco (CIDADAOS_DA_CARGA).
+  // Do 9 em diante, os CNS de exemplo começam com 0 (nenhum CNS real começa assim) e não seguem padrão de teclado,
   // para que uma conta nova não caia por engano num cadastro da semente (RN21) e herde as consultas dele.
-  const cnsExemplo = (i: number) => (i === 0 ? CONTA_DEMO.nrCns : `09${String(i + 1).padStart(13, "0")}`);
-  const datasOriginais = ["1958-03-12", "1990-07-01", "1949-11-25", "1985-01-30", "2001-05-14", "1976-09-08"];
+  const cnsExemplo = (i: number) => CIDADAOS_DA_CARGA[i]?.nrCns ?? `09${String(i + 1).padStart(13, "0")}`;
+  // Nascimentos dos 8 cidadãos da carga do banco; os demais são sorteados.
+  const datasOriginais = ["1958-03-12", "1990-07-01", "1949-11-25", "1985-01-30", "2001-05-14", "1976-09-08", "1993-04-22", "1968-10-03"];
   const cidadaos = nomes.map((nmCidadao, i): Cidadao => {
     const idade = 18 + Math.floor(rand() * 68);
     const nascimento = new Date(agora); nascimento.setFullYear(nascimento.getFullYear() - idade);
@@ -55,8 +102,9 @@ export function gerarSemente(horariosBase: Horario[], agora: Date = new Date()):
     const recado = recadoIds.includes(i + 1);
     const unidade = unidadesIniciais[i % 3];
     return { idCidadao: i + 1, nmCidadao, nrCns: cnsExemplo(i), dtNascimento: datasOriginais[i] ?? chaveDia(nascimento.toISOString()), dsSexo: i % 2 === 0 ? "F" : "M", nrCelular: semContato || recado ? "" : telefone("8888", i), nmContatoRecado: recado || i === 4 ? "Contato da família" : "", nrContatoRecado: recado || i === 4 ? telefone("7777", i) : "", nrCep: unidade?.nrCep ?? "04010100",
-      // Só a conta demo tem senha; os outros foram cadastrados no balcão (RN21: podem criar a conta depois).
-      nrCpf: null, tpAcesso: i === 0 ? "SENHA" : "BALCAO" };
+      // 1 a 8: CPF e acesso da carga do banco (SENHA, BALCAO ou GOVBR).
+      // Do 9 em diante: cadastrados no balcão, sem senha (RN21: podem criar a conta depois).
+      nrCpf: CIDADAOS_DA_CARGA[i]?.nrCpf ?? null, tpAcesso: CIDADAOS_DA_CARGA[i]?.tpAcesso ?? "BALCAO" };
   });
   const consultas: Consulta[] = [], orientacoes: Orientacao[] = [];
   const horarios = horariosBase.map((h) => ({ ...h, flOcupado: false }));
@@ -136,6 +184,7 @@ export function gerarSemente(horariosBase: Horario[], agora: Date = new Date()):
       h.flOcupado = true;
     }
   }
+  ajustarPerfisTeste(consultas, now);
   const inicioEntrada = new Date(agora); inicioEntrada.setHours(7, 0, 0, 0);
   const fimEntrada = new Date(agora); fimEntrada.setHours(17, 0, 0, 0);
   const limiteEntrada = agora < inicioEntrada || agora > fimEntrada ? fimEntrada.getTime() : now;

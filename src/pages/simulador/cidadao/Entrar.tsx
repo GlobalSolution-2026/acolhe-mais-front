@@ -4,7 +4,7 @@
  * agendamento, ficha de saúde, lista do dia (já entrando nela) ou Perfil.
  * O botão "Entrar com gov.br" fica desativado (disponível após a adesão do município).
  * Veio do protótipo: src/pages/cidadao/Entrar.tsx.
- * Endpoints: POST /cidadaos/login (API Java; enquanto não existir, demonstração com a conta de exemplo).
+ * Endpoints: POST /cidadaos/login (API Java; sem VITE_API_URL, demonstração com as contas de data/contaDemo.ts).
  * Estados: enviando ("Entrando...") e erro (401: Cartão SUS ou senha incorretos).
  */
 import { useState } from 'react';
@@ -47,8 +47,8 @@ export default function Entrar() {
     setErro(null);
     try {
       const cidadao = await entrar(nrCns, senha);
-      definirCidadaoAtual(cidadao.idCidadao);
-      if (retorno.destino === 'lista-do-dia' && retorno.ubs) entrarNaLista(retorno.ubs);
+      definirCidadaoAtual(cidadao.idCidadao, cidadao.nmCidadao);
+      if (retorno.destino === 'lista-do-dia' && retorno.ubs) entrarNaLista(retorno.ubs, cidadao.nmCidadao);
       navigate(destinoAposLogin(retorno), { replace: true });
     } catch (e) {
       setErro(mensagemDoErro(e));

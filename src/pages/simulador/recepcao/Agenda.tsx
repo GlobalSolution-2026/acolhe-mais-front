@@ -58,7 +58,7 @@ export default function Agenda() {
   const dia = diaEscolhido ?? dias.find((d) => d >= hoje) ?? dias[dias.length - 1] ?? '';
   const horariosDia = dados.horarios.filter((h) => chaveDia(h.dtHorario) === dia).sort((a, b) => a.dtHorario.localeCompare(b.dtHorario));
 
-  // TODO: aguardando a API Java devolver idHorario na consulta (sem ele, a agenda real não liga horário e paciente).
+  // Liga horário e paciente pelo idHorario da consulta; uma consulta LIBERADA só aparece se não houver outra ativa.
   const consultaDoHorario = (h: Horario) =>
     dados.consultas.find((c) => c.idHorario === h.idHorario && c.dsStatus !== 'LIBERADA') ??
     dados.consultas.find((c) => c.idHorario === h.idHorario);

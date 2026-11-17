@@ -5,6 +5,7 @@
  */
 import { chaveDia, proximosDiasAtendimento } from "../lib/datas";
 import type { EstadoSimulador } from "../context/estadoSimulador";
+import type { Consulta, Horario } from "../types";
 import { escolherDestinatarioOferta, horarioOferecivel, dispensadaConfirmacao, temContatoValido, segundosRestantesOferta } from "./regrasAgendamento";
 
 export interface ResumoSimulacao {
@@ -14,14 +15,21 @@ export interface ResumoSimulacao {
   mantidasSemContato: number;
 }
 
-/** A mesma seleção vale para a oferta manual, automática e para o repasse. */
-export function oferecerHorario(estado: EstadoSimulador, idHorario: number, agora: Date): EstadoSimulador {
-  const h = estado.horarios.find((x) => x.idHorario === idHorario);
-  if (!h || !horarioOferecivel(h, estado.ofertas, agora)) return estado;
-  const perdida = [...estado.consultas].reverse().find((c) => c.idHorario === idHorario && c.dsStatus === "LIBERADA");
-  const entrada = escolherDestinatarioOferta(estado.listaDoDia.filter((e) => e.idUnidade === h.idUnidade), estado.ofertas, h, perdida?.idCidadao ?? null, estado.consultas);
+/**
+ * Oferece um horário livre ao próximo da lista do dia. A mesma seleção vale para a oferta manual,
+ * automática e para o repasse.
+ * O horário e as consultas vêm de quem chama: com a API ligada, são os do banco (a lista e as ofertas
+ * continuam só no front); no modo demonstração, os do mock.
+ * @param horario horário a oferecer (precisa estar livre, hoje e com antecedência)
+ * @param consultas consultas usadas para achar quem perdeu o horário e quem já tem consulta hoje
+ */
+export function oferecerHorario(estado: EstadoSimulador, horario: Horario, agora: Date, consultas: Consulta[] = estado.consultas): EstadoSimulador {
+  const h = horario;
+  if (!horarioOferecivel(h, estado.ofertas, agora)) return estado;
+  const perdida = [...consultas].reverse().find((c) => c.idHorario === h.idHorario && c.dsStatus === "LIBERADA");
+  const entrada = escolherDestinatarioOferta(estado.listaDoDia.filter((e) => e.idUnidade === h.idUnidade), estado.ofertas, h, perdida?.idCidadao ?? null, consultas);
   if (!entrada) return estado;
-  return { ...estado, ofertas: [...estado.ofertas, { idOferta: Math.max(0, ...estado.ofertas.map((o) => o.idOferta)) + 1, idHorario, idUnidade: h.idUnidade, idEntrada: entrada.idEntrada, nmCidadao: entrada.nmCidadao, dtCriacao: agora.toISOString(), status: "PENDENTE" }] };
+  return { ...estado, ofertas: [...estado.ofertas, { idOferta: Math.max(0, ...estado.ofertas.map((o) => o.idOferta)) + 1, idHorario: h.idHorario, idUnidade: h.idUnidade, dtHorario: h.dtHorario, idEntrada: entrada.idEntrada, nmCidadao: entrada.nmCidadao, dtCriacao: agora.toISOString(), status: "PENDENTE" }] };
 }
 
 /**
@@ -32,7 +40,10 @@ export function finalizarOferta(estado: EstadoSimulador, idOferta: number, respo
   const oferta = estado.ofertas.find((o) => o.idOferta === idOferta && o.status === "PENDENTE");
   if (!oferta) return estado;
   const novo: EstadoSimulador = { ...estado, ofertas: estado.ofertas.map((o) => o.idOferta === idOferta ? { ...o, status: resposta } : o), listaDoDia: resposta === "ACEITA" ? estado.listaDoDia.map((e) => e.idEntrada === oferta.idEntrada ? { ...e, status: "ENCERRADA" } : e) : estado.listaDoDia };
-  return resposta === "ACEITA" ? novo : oferecerHorario(novo, oferta.idHorario, agora);
+  if (resposta === "ACEITA") return novo;
+  // Repasse: usa a cópia do horário guardada na oferta (o horário pode ser da API, não do mock).
+  const horario: Horario = { idHorario: oferta.idHorario, idUnidade: oferta.idUnidade, dtHorario: oferta.dtHorario, nrDuracaoMinuto: 0, flOcupado: false };
+  return oferecerHorario(novo, horario, agora);
 }
 
 /**
@@ -58,8 +69,9 @@ export function liberarConsulta(estado: EstadoSimulador, idConsulta: number, ago
     consultas: estado.consultas.map((x) => (x.idConsulta === idConsulta ? { ...x, dsStatus: "LIBERADA" } : x)),
     horarios: estado.horarios.map((h) => (h.idHorario === c.idHorario ? { ...h, flOcupado: false } : h)),
   };
-  if (c.idHorario === undefined) return { novoEstado: liberado, oferecida: false };
-  const oferecido = oferecerHorario(liberado, c.idHorario, agora);
+  const horario = liberado.horarios.find((h) => h.idHorario === c.idHorario);
+  if (!horario) return { novoEstado: liberado, oferecida: false };
+  const oferecido = oferecerHorario(liberado, horario, agora);
   return { novoEstado: oferecido, oferecida: oferecido !== liberado };
 }
 

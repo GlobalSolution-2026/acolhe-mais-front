@@ -8,8 +8,8 @@
  *   e espera 400 ms para imitar a rede (simular).
  * Ligar a API de verdade é só configurar a variável de ambiente.
  *
- * Endpoints pedidos ao colega do Java e ainda não feitos (o front já chama assim):
- * PUT /consultas/{id}/status, PUT /cidadaos/{id} só com contato, POST /cidadaos/login e GET /cidadaos?cns=.
+ * Ainda não aceito pela API Java: a RN21 (cadastro do balcão, BALCAO, virar conta com senha, SENHA).
+ * Hoje o POST /cidadaos devolve 409 para qualquer CNS já cadastrado; no modo demonstração a RN21 funciona.
  *
  * As funções marcadas com "DEMONSTRAÇÃO: não existe na API Java" ficam sempre no mock
  * (lista do dia, oferta de vaga, orientação salva, balcão e ficha de saúde).
@@ -25,10 +25,13 @@ import { podeVincular } from "./balcao";
 import { ErroApi, falhar, requisitar, simular } from "./http";
 import { montarEntradaPrevisao, preverFaltaSemTravar } from "./ia";
 import { acoesPresenca, listaDoDiaAberta, MENSAGEM_LISTA_SO_DIA_UTIL, podeCancelar, segundosRestantesOferta } from "./regrasAgendamento";
-import { liberarConsulta } from "./simulacao";
+import { finalizarOferta, liberarConsulta } from "./simulacao";
 
 /** URL da API Java; vazia = modo demonstração. */
 export const API_URL: string | undefined = import.meta.env.VITE_API_URL || undefined;
+
+/** Mensagem do 409 quando a oferta de vaga da lista do dia venceu ou foi repassada. */
+const MENSAGEM_OFERTA_VENCIDA = "Esta oferta venceu ou foi repassada. Confira seus avisos.";
 
 /** Mensagem do 409 ao agendar (a mesma no mock e na API real, para a tela não depender do texto da API). */
 export const MENSAGEM_HORARIO_OCUPADO = "Este horário acabou de ser ocupado. Escolha outro.";
@@ -118,7 +121,6 @@ export async function buscarUnidade(idUnidade: number): Promise<Unidade> {
 /**
  * GET /unidades/{idUnidade}/horarios — API Java
  * Lista os horários de uma UBS. Usada na tela "Horários" do celular e na agenda da Recepção.
- * Enquanto a API não devolver flOcupado, os horários reais aparecem como livres e o 409 do agendamento avisa.
  * Erros esperados: 404 (unidade não existe).
  */
 export async function listarHorarios(idUnidade: number): Promise<Horario[]> {
@@ -181,8 +183,8 @@ function cadastrarNoMock({ senha, ...dados }: CidadaoEntrada): Cidadao {
  * Cartão SUS; a conta completa esse cadastro e mantém as consultas já marcadas.
  * Erros esperados: 400 (senha curta ou dados inválidos), 409 (já existe conta com este CNS).
  */
-// TODO: a RN21 com a API real depende da API Java aceitar transformar um cadastro BALCAO em SENHA
-// (hoje o POST devolve 409 para qualquer CNS repetido). No modo demonstração ela já funciona.
+// RN21 com a API real: a API Java ainda não transforma um cadastro BALCAO em SENHA e devolve 409
+// para qualquer CNS repetido. No modo demonstração ela já funciona.
 export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha">, senha: string): Promise<Cidadao> {
   const corpo = corpoCidadao({ ...dados, tpAcesso: "SENHA", senha });
   if (API_URL) {
@@ -195,6 +197,8 @@ export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha
     const existente = s.obterEstado().cidadaos.find((c) => c.nrCns === corpo.nrCns);
     if (!existente) return cadastrarNoMock(corpo);
     if (existente.tpAcesso === "SENHA") falhar({ status: 409, mensagem: "Já existe conta com este Cartão SUS. Use Entrar." });
+    // GOVBR já é uma conta (pelo gov.br): a RN21 vale só para o cadastro do balcão.
+    if (existente.tpAcesso === "GOVBR") falhar({ status: 409, mensagem: "Este Cartão SUS já tem conta pelo gov.br. O acesso pelo gov.br ainda não está disponível." });
     // RN21: cadastro do balcão → vira conta com senha (mesmo id, consultas mantidas).
     const { senha: _senha, ...semSenha } = corpo;
     void _senha;
@@ -227,7 +231,7 @@ export async function buscarCidadao(idCidadao: number): Promise<Cidadao> {
 
 /**
  * GET /cidadaos?cns={nrCns} — API Java
- * Busca o cidadão pelo Cartão SUS. Usada no balcão da Recepção.
+ * Busca o cidadão pelo Cartão SUS (filtro ?cns= da API, que devolve um cadastro só). Usada no balcão da Recepção.
  * @returns o cadastro, ou null quando não existe (404)
  */
 export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null> {
@@ -235,10 +239,7 @@ export async function buscarCidadaoPorCns(nrCns: string): Promise<Cidadao | null
   try {
     if (API_URL) {
       const resposta = await requisitar(`${API_URL}/cidadaos?cns=${cns}`, "JAVA");
-      const json = (await resposta.json()) as Cidadao | Cidadao[];
-      // Enquanto o filtro ?cns= não existir na API, ela devolve a lista inteira: o front procura o CNS nela.
-      const cidadao = Array.isArray(json) ? json.find((c) => c.nrCns === cns) : json;
-      return cidadao ? converterCidadao(cidadao) : null;
+      return converterCidadao(await resposta.json());
     }
     return await simular("GET", `/cidadaos?cns=${cns}`, "JAVA", () => {
       const cidadao = obterStore().obterEstado().cidadaos.find((c) => c.nrCns === cns);
@@ -282,9 +283,9 @@ export async function atualizarCidadao(idCidadao: number, dados: CidadaoAtualiza
 
 /**
  * POST /cidadaos/login — API Java
- * Entra com Cartão SUS (15 números) e senha. Usada na tela "Entrar" do celular.
- * Enquanto o endpoint não existir na API, fica em demonstração com a conta de exemplo (data/contaDemo.ts).
- * Erros esperados: 401 (CNS ou senha incorretos, ou cadastro do balcão sem senha).
+ * Entra com Cartão SUS (15 números) e senha. Usada na tela "Entrar" do celular e no painel "Perfis para testar".
+ * No modo demonstração, as contas com senha são as de data/contaDemo.ts (as mesmas da carga do banco).
+ * Erros esperados: 401 (CNS ou senha incorretos, ou cadastro sem senha: BALCAO ou GOVBR).
  */
 export async function entrar(nrCns: string, senha: string): Promise<Cidadao> {
   const corpo: LoginEntrada = { nrCns: soNumeros(nrCns), senha };
@@ -335,14 +336,25 @@ export interface AgendamentoEntrada {
  * Erros esperados: 400, 404 (horário ou cidadão não existe), 409 (horário acabou de ser ocupado).
  */
 export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consulta> {
-  const { horario, cidadao, idOrientacao } = dados;
+  const { horario, cidadao } = dados;
   if (API_URL) {
     const consultas = await listarConsultas();
     const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, consultas, agora()));
-    const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
+    // idOrientacao vai null: a orientação ainda só existe no front (demonstração), com o número do mock.
+    // O banco só tem as orientações 1 a 5 da carga de teste; mandar o número do mock quebraria a FK
+    // com ACM_ORIENTACAO e a API devolveria 400. Quando a orientação for salva na API, enviar o id dela.
+    const corpo: ConsultaEntrada = { idHorario: horario.idHorario, idCidadao: cidadao.idCidadao, idOrientacao: null, vlProbFalta: previsao.vlProbFalta, dsRiscoFalta: previsao.dsRiscoFalta };
+    // Oferta da lista do dia (só no front): confere antes de gravar, como no modo demonstração.
+    if (dados.idOferta && !ofertaValida(obterStore().obterEstado(), dados.idOferta, horario.idHorario, cidadao.idCidadao)) {
+      falhar({ status: 409, mensagem: MENSAGEM_OFERTA_VENCIDA });
+    }
     try {
       const resposta = await requisitar(`${API_URL}/consultas`, "JAVA", { method: "POST", body: JSON.stringify(corpo) });
-      return await resposta.json();
+      const consulta: Consulta = await resposta.json();
+      // DEMONSTRAÇÃO: a consulta foi gravada na API; a oferta vira ACEITA e a pessoa sai da lista do dia no front.
+      const idOferta = dados.idOferta;
+      if (idOferta) obterStore().atualizarEstado((e) => finalizarOferta(e, idOferta, "ACEITA", agora()));
+      return consulta;
     } catch (erro) {
       // 409: a tela mostra sempre o mesmo texto, qualquer que seja o da API.
       if (erro instanceof ErroApi && erro.status === 409) throw new ErroApi(MENSAGEM_HORARIO_OCUPADO, 409);
@@ -350,6 +362,16 @@ export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consul
     }
   }
   return simular("POST", "/consultas", "JAVA", () => agendarNoMock(dados), 201);
+}
+
+/**
+ * A oferta ainda pode ser aceita: está pendente, dentro dos 30 min, é deste horário
+ * e a entrada da lista do dia é deste cidadão.
+ */
+function ofertaValida(e: EstadoSimulador, idOferta: number, idHorario: number, idCidadao: number): boolean {
+  const oferta = e.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === idHorario && o.status === "PENDENTE");
+  const entrada = e.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
+  return !!oferta && !!entrada && entrada.idCidadao === idCidadao && segundosRestantesOferta(oferta, agora()) > 0;
 }
 
 /** Agenda no mock, com as mesmas validações da API Java (404 e 409). */
@@ -385,8 +407,8 @@ async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrienta
     }
     const oferta = atual.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === horario.idHorario && o.status === "PENDENTE");
     const entrada = atual.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
-    if (idOferta && (!oferta || !entrada || entrada.idCidadao !== cidadao.idCidadao || segundosRestantesOferta(oferta, agora()) === 0)) {
-      falhar({ status: 409, mensagem: "Esta oferta venceu ou foi repassada. Confira seus avisos." });
+    if (idOferta && !ofertaValida(atual, idOferta, horario.idHorario, cidadao.idCidadao)) {
+      falhar({ status: 409, mensagem: MENSAGEM_OFERTA_VENCIDA });
     }
     nova.idConsulta = proximoId(atual.consultas.map((c) => c.idConsulta));
     return {
@@ -507,20 +529,23 @@ export async function vincularOrientacao(idOrientacao: number, idCidadao: number
 
 /**
  * A recepção coloca o cidadão na lista do dia da UBS.
+ * O cidadão vem de quem chama (busca ou cadastro no balcão, pela API ou pelo mock): com a API ligada,
+ * a pessoa pode não existir no mock, então a função não o procura lá.
  * Regras: só em dia útil; a mesma pessoa não entra duas vezes.
  */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function incluirNaListaDoDia(dados: { idUnidade: number; idCidadao: number; idOrientacao: number; dsCor: EntradaListaDoDia["dsCor"] }): Promise<EntradaListaDoDia> {
+export async function incluirNaListaDoDia(dados: {
+  idUnidade: number; cidadao: Pick<Cidadao, "idCidadao" | "nmCidadao">; idOrientacao: number; dsCor: EntradaListaDoDia["dsCor"];
+}): Promise<EntradaListaDoDia> {
+  const { cidadao } = dados;
   return simular("POST", "lista do dia (só no front)", "FRONT", () => {
     const s = obterStore();
     const e = s.obterEstado();
-    const cidadao = e.cidadaos.find((c) => c.idCidadao === dados.idCidadao);
-    if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
     if (!listaDoDiaAberta(agora())) falhar({ status: 409, mensagem: MENSAGEM_LISTA_SO_DIA_UTIL });
-    if (e.listaDoDia.some((x) => x.idCidadao === dados.idCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, mensagem: "Este cidadão já está na lista do dia." });
+    if (e.listaDoDia.some((x) => x.idCidadao === cidadao.idCidadao && x.status === "AGUARDANDO")) falhar({ status: 409, mensagem: "Este cidadão já está na lista do dia." });
     const entrada: EntradaListaDoDia = {
       idEntrada: proximoId(e.listaDoDia.map((x) => x.idEntrada)),
-      idCidadao: dados.idCidadao, idOrientacao: dados.idOrientacao, idUnidade: dados.idUnidade,
+      idCidadao: cidadao.idCidadao, idOrientacao: dados.idOrientacao, idUnidade: dados.idUnidade,
       nmCidadao: cidadao.nmCidadao, dsCor: dados.dsCor, dtEntrada: agora().toISOString(),
       flPrioridade: false, flCidadao: false, status: "AGUARDANDO",
     };
@@ -531,6 +556,8 @@ export async function incluirNaListaDoDia(dados: { idUnidade: number; idCidadao:
 
 /**
  * A recepção registra que a pessoa aceitou a vaga por telefone e agenda a consulta.
+ * A oferta e a entrada da lista ficam no front; o cidadão e o horário vêm de GET /cidadaos/{id}
+ * e GET /unidades/{id}/horarios (da API quando ligada), para o POST /consultas usar dados do banco.
  * Regra: a oferta precisa estar pendente e dentro do prazo de 30 min.
  */
 // DEMONSTRAÇÃO: não existe na API Java (o agendamento em si usa POST /consultas)
@@ -538,11 +565,12 @@ export async function aceitarOfertaPorTelefone(idOferta: number): Promise<Consul
   const e = obterStore().obterEstado();
   const oferta = e.ofertas.find((o) => o.idOferta === idOferta && o.status === "PENDENTE");
   const entrada = e.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
-  const horario = e.horarios.find((h) => h.idHorario === oferta?.idHorario);
-  const cidadao = e.cidadaos.find((c) => c.idCidadao === entrada?.idCidadao);
-  if (!oferta || segundosRestantesOferta(oferta, agora()) === 0 || !entrada || !horario || !cidadao) {
+  if (!oferta || segundosRestantesOferta(oferta, agora()) === 0 || !entrada || entrada.idCidadao === null) {
     falhar({ status: 409, mensagem: "Oferta indisponível." });
   }
+  const [cidadao, horarios] = await Promise.all([buscarCidadao(entrada.idCidadao), listarHorarios(oferta.idUnidade)]);
+  const horario = horarios.find((h) => h.idHorario === oferta.idHorario);
+  if (!horario) falhar({ status: 409, mensagem: "Oferta indisponível." });
   return agendarConsulta({ horario, cidadao, idOrientacao: entrada.idOrientacao, idOferta });
 }
 

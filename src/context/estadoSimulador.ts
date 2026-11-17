@@ -1,6 +1,6 @@
 /**
  * Estado do modo demonstração do simulador (o "banco de dados" de mentira do front).
- * Enquanto a API Java não estiver no ar, os serviços leem e alteram este estado,
+ * Sem VITE_API_URL (modo demonstração), os serviços leem e alteram este estado,
  * que fica salvo no localStorage para sobreviver a um F5.
  */
 import type { Cidadao, Consulta, CredencialCidadao, EntradaListaDoDia, FichaSaude, Horario, OfertaVaga, Unidade } from "../types";
@@ -38,7 +38,7 @@ export interface EstadoSimulador {
 const CHAVE_STORAGE = "acolhe-plus:simulador";
 
 /** Sobe quando o formato do estado muda: o estado salvo antigo é descartado. */
-const VERSAO_SEMENTE = 2; // 2: nomes da API Java (id*), CEP e telefone só com números
+const VERSAO_SEMENTE = 3; // 2: nomes da API Java (id*), CEP e telefone só com números · 3: cidadãos 1 a 8 iguais à carga do banco e dtHorario na oferta
 
 /**
  * Monta o estado inicial da demonstração a partir dos dados de exemplo (pasta data/).

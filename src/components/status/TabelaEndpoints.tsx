@@ -10,7 +10,7 @@ export default function TabelaEndpoints() {
     <section className="flex flex-col gap-4 rounded-xl border border-borda bg-branco p-4 shadow-leve">
       <div>
         <h2 className="text-lg font-extrabold text-primaria">Endpoints por controller</h2>
-        <p className="text-sm text-textoSuave">"Pedido" = ajuste já pedido à API Java; o front já chama assim e, até lá, usa o modo demonstração.</p>
+        <p className="text-sm text-textoSuave">Sem VITE_API_URL ou VITE_FLASK_URL, as mesmas chamadas respondem em modo demonstração.</p>
       </div>
       {GRUPOS_ENDPOINTS.map((grupo) => (
         <div key={grupo.nome} className="flex flex-col gap-2">
@@ -21,7 +21,6 @@ export default function TabelaEndpoints() {
                 <div className="flex items-center gap-2 md:w-72 md:shrink-0">
                   <BadgeMetodo metodo={e.metodo} />
                   <code className="break-all font-mono text-sm">{e.rota}</code>
-                  {e.pedido && <span className="rounded-full bg-mentaSuave px-2 py-0.5 text-xs font-bold text-primaria">Pedido</span>}
                 </div>
                 <p className="text-sm text-textoSuave">{e.onde}</p>
               </li>

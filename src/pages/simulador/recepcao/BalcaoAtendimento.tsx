@@ -98,7 +98,7 @@ export default function BalcaoAtendimento({ dados, idUnidade, nrCep }: BalcaoAte
 
   const colocarNaLista = (cidadao: Cidadao) => executar(async () => {
     const dsCor = orientacao.dsCor === 'AZUL' ? 'AZUL' : 'VERDE';
-    const entrada = await incluirNaListaDoDia({ idUnidade, idCidadao: cidadao.idCidadao, idOrientacao: orientacao.idOrientacao, dsCor });
+    const entrada = await incluirNaListaDoDia({ idUnidade, cidadao, idOrientacao: orientacao.idOrientacao, dsCor });
     setEtapa({ tipo: 'NA_LISTA', cidadao, idEntrada: entrada.idEntrada });
   });
 

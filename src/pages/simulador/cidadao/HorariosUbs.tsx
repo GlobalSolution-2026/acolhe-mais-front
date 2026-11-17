@@ -21,7 +21,7 @@ import { useCarregar } from '../../../hooks/useCarregar';
 import { useEntrarNaListaDoDia } from '../../../hooks/useEntrarNaListaDoDia';
 import { chaveDia, isDiaUtil, rotuloDia } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
-import { buscarUnidade, listarHorarios } from '../../../services/api';
+import { buscarCidadao, buscarUnidade, listarHorarios } from '../../../services/api';
 import { BASE_CELULAR, queryRetorno } from '../../../services/navegacao';
 import { listaDoDiaAberta } from '../../../services/regrasAgendamento';
 import type { Horario, Unidade } from '../../../types';
@@ -54,13 +54,18 @@ export default function HorariosUbs() {
   const podeEntrarNaLista = atual?.resultado?.dsCor === 'VERDE' || atual?.resultado?.dsCor === 'AZUL';
   const listaAberta = listaDoDiaAberta(hoje);
 
-  /** Entra na lista do dia; sem login, vai para Entrar e volta para a lista desta UBS. */
-  const aoEntrarNaLista = () => {
+  /**
+   * Entra na lista do dia; sem login, vai para Entrar e volta para a lista desta UBS.
+   * O nome vem do cadastro (GET /cidadaos/{id}): com a API ligada, o mock pode não ter esta pessoa.
+   */
+  const aoEntrarNaLista = async () => {
     if (estado.idCidadaoAtual === null) {
       navigate(`${BASE_CELULAR}/entrar${queryRetorno({ destino: 'lista-do-dia', ubs: idUnidade })}`);
       return;
     }
-    if (entrarNaLista(idUnidade)) navigate(`${BASE_CELULAR}/lista-do-dia`);
+    // Se a busca falhar, entra mesmo assim: o nome cai no do mock (a lista do dia é demonstração).
+    const cadastro = await buscarCidadao(estado.idCidadaoAtual).catch(() => null);
+    if (entrarNaLista(idUnidade, cadastro?.nmCidadao)) navigate(`${BASE_CELULAR}/lista-do-dia`);
   };
 
   return (
@@ -77,7 +82,7 @@ export default function HorariosUbs() {
               A lista do dia funciona só em dias úteis. Volte em um dia útil ou escolha outra UBS.
             </p>
           ) : podeEntrarNaLista ? (
-            <button type="button" onClick={aoEntrarNaLista} className={`${BOTAO_PRIMARIO} cursor-pointer`}>
+            <button type="button" onClick={() => void aoEntrarNaLista()} className={`${BOTAO_PRIMARIO} cursor-pointer`}>
               <FiList aria-hidden /> Entrar na lista do dia
             </button>
           ) : (
@@ -108,7 +113,7 @@ export default function HorariosUbs() {
       {!carregando && !erro && livres.length > 0 && listaAberta && podeEntrarNaLista && (
         <div className="flex flex-col gap-2">
           <SeloDemonstracao />
-          <button type="button" onClick={aoEntrarNaLista} className={`${BOTAO_CONTORNO} cursor-pointer`}>
+          <button type="button" onClick={() => void aoEntrarNaLista()} className={`${BOTAO_CONTORNO} cursor-pointer`}>
             <FiList aria-hidden /> Prefiro entrar na lista do dia
           </button>
         </div>

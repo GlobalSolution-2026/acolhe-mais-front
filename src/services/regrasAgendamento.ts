@@ -35,7 +35,7 @@ function prazoFinal(dtHorario: string): Date {
 
 /** Consultas marcadas depois do prazo final (menos de 1 dia útil de antecedência) dispensam confirmação. */
 export function dispensadaConfirmacao(c: Pick<Consulta, "dtAgendamento" | "dtHorario">): boolean {
-  // Sem a data do agendamento (a API Java ainda não devolve), a consulta segue a regra normal de confirmação.
+  // Sem a data do agendamento (dado incompleto), a consulta segue a regra normal de confirmação.
   if (!c.dtAgendamento) return false;
   return new Date(c.dtAgendamento) > prazoFinal(c.dtHorario);
 }

@@ -9,7 +9,7 @@ import { carregarFeriados } from "../lib/feriados";
 import { agora, carregarPreferenciaSimulacao } from "../lib/relogio";
 import { entradaDoCidadao, listaDoDiaAberta, vincularEntradaSemLogin } from "../services/regrasAgendamento";
 import { finalizarOferta, oferecerHorario, simularPrazo, vencerOfertas } from "../services/simulacao";
-import type { EntradaListaDoDia } from "../types";
+import type { Consulta, EntradaListaDoDia, Horario } from "../types";
 import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
 import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
@@ -99,12 +99,13 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
   );
 
   const definirCidadaoAtual = useCallback(
-    (idCidadao: number) =>
+    (idCidadao: number, nmCidadao?: string) =>
       atualizarEstado((e) => ({
         ...e,
         idCidadaoAtual: idCidadao,
         // Regra: a entrada na lista do dia feita sem login passa a ser desta conta.
-        listaDoDia: vincularEntradaSemLogin(e.listaDoDia, idCidadao, e.cidadaos.find((c) => c.idCidadao === idCidadao)?.nmCidadao),
+        // O nome vem de quem chamou (cadastro da API); o mock é só o plano B.
+        listaDoDia: vincularEntradaSemLogin(e.listaDoDia, idCidadao, nmCidadao ?? e.cidadaos.find((c) => c.idCidadao === idCidadao)?.nmCidadao),
       })),
     [atualizarEstado],
   );
@@ -113,7 +114,7 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
 
   /** Regras: a lista do dia só abre em dia útil e a mesma pessoa não entra duas vezes. */
   const entrarNaListaDoDia = useCallback(
-    (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number) =>
+    (idUnidade: number, dsCor: EntradaListaDoDia["dsCor"], idOrientacao: number, nmCidadao?: string) =>
       atualizarEstado((e) => {
         if (!listaDoDiaAberta(agora()) || entradaDoCidadao(e.listaDoDia, e.idCidadaoAtual)) return e;
         const entrada: EntradaListaDoDia = {
@@ -121,7 +122,8 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
           idUnidade,
           idCidadao: e.idCidadaoAtual,
           idOrientacao,
-          nmCidadao: e.cidadaos.find((c) => c.idCidadao === e.idCidadaoAtual)?.nmCidadao ?? "Você",
+          // Nome do cadastro da API quando vier; senão, do mock (modo demonstração).
+          nmCidadao: nmCidadao ?? e.cidadaos.find((c) => c.idCidadao === e.idCidadaoAtual)?.nmCidadao ?? "Você",
           dsCor,
           dtEntrada: agora().toISOString(),
           flPrioridade: false,
@@ -145,7 +147,7 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
   );
 
   const oferecerVaga = useCallback(
-    (idHorario: number) => atualizarEstado((e) => oferecerHorario(e, idHorario, agora())),
+    (horario: Horario, consultas: Consulta[]) => atualizarEstado((e) => oferecerHorario(e, horario, agora(), consultas)),
     [atualizarEstado],
   );
 
