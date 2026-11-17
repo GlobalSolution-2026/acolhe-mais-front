@@ -195,6 +195,8 @@ export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha
     const existente = s.obterEstado().cidadaos.find((c) => c.nrCns === corpo.nrCns);
     if (!existente) return cadastrarNoMock(corpo);
     if (existente.tpAcesso === "SENHA") falhar({ status: 409, mensagem: "Já existe conta com este Cartão SUS. Use Entrar." });
+    // GOVBR já é uma conta (pelo gov.br): a RN21 vale só para o cadastro do balcão.
+    if (existente.tpAcesso === "GOVBR") falhar({ status: 409, mensagem: "Este Cartão SUS já tem conta pelo gov.br. O acesso pelo gov.br ainda não está disponível." });
     // RN21: cadastro do balcão → vira conta com senha (mesmo id, consultas mantidas).
     const { senha: _senha, ...semSenha } = corpo;
     void _senha;

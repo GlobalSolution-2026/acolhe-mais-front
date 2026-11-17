@@ -31,8 +31,12 @@ export interface Horario {
   flOcupado?: boolean;
 }
 
-/** Forma de acesso do cidadão: conta com senha no app ou cadastro feito no balcão (sem senha). */
-export type TipoAcesso = "SENHA" | "BALCAO";
+/**
+ * Forma de acesso do cidadão: conta com senha no app, cadastro feito no balcão (sem senha)
+ * ou conta gov.br. GOVBR já existe no banco (carga de teste), mas o login pelo gov.br está previsto
+ * e ainda não existe: sem senha, POST /cidadaos/login devolve 401 para essas pessoas.
+ */
+export type TipoAcesso = "SENHA" | "BALCAO" | "GOVBR";
 
 /** Cadastro do cidadão. CidadaoSaidaDTO da API. CNS = Cartão Nacional de Saúde (Cartão SUS, 15 números). */
 export interface Cidadao {
