@@ -1,7 +1,6 @@
 /**
  * Endpoints que o front usa, agrupados por controller, com a tela do simulador onde aparecem.
- * Mostrados na aba Status das APIs (seção 7 do CLAUDE.md).
- * "pedido" = mudança pedida ao colega do Java, que o front já chama assim.
+ * Mostrados na aba Status das APIs (seção 7 do CLAUDE.md). Todos já existem na API Java (branch main).
  */
 import type { MetodoHttp, NomeApi } from "../types";
 
@@ -11,8 +10,6 @@ export interface EndpointDocumentado {
   rota: string;
   /** Telas do simulador que chamam este endpoint. */
   onde: string;
-  /** Ainda não existe na API (pedido ao colega). */
-  pedido?: boolean;
 }
 
 /** Um grupo da tabela (controller da API Java ou a API Flask). */
@@ -44,8 +41,8 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
     endpoints: [
       { metodo: "POST", rota: "/cidadaos", onde: "Cidadão: criar conta · Recepção: cadastro no balcão e na agenda" },
       { metodo: "GET", rota: "/cidadaos/{id}", onde: "Cidadão: perfil, editar perfil e Agendar" },
-      { metodo: "GET", rota: "/cidadaos?cns={nrCns}", onde: "Recepção: buscar no balcão e na agenda", pedido: true },
-      { metodo: "PUT", rota: "/cidadaos/{id}", onde: "Cidadão: editar perfil e Agendar · Recepção: conferir cadastro no balcão", pedido: true },
+      { metodo: "GET", rota: "/cidadaos?cns={nrCns}", onde: "Recepção: buscar no balcão e na agenda" },
+      { metodo: "PUT", rota: "/cidadaos/{id}", onde: "Cidadão: editar perfil e Agendar · Recepção: conferir cadastro no balcão" },
     ],
   },
   {
@@ -54,13 +51,13 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
     endpoints: [
       { metodo: "GET", rota: "/consultas", onde: "Cidadão: minhas consultas e avisos · Recepção: agenda, pendentes e indicadores" },
       { metodo: "POST", rota: "/consultas", onde: "Cidadão: Agendar · Recepção: agenda, balcão e lista do dia" },
-      { metodo: "PUT", rota: "/consultas/{id}/status", onde: "Cidadão: confirmar e cancelar · Recepção: presença, falta e confirmações", pedido: true },
+      { metodo: "PUT", rota: "/consultas/{id}/status", onde: "Cidadão: confirmar e cancelar · Recepção: presença, falta e confirmações" },
     ],
   },
   {
     nome: "Auth",
     api: "JAVA",
-    endpoints: [{ metodo: "POST", rota: "/cidadaos/login", onde: "Cidadão: Entrar", pedido: true }],
+    endpoints: [{ metodo: "POST", rota: "/cidadaos/login", onde: "Cidadão: Entrar" }],
   },
   {
     nome: "IA (Flask)",
