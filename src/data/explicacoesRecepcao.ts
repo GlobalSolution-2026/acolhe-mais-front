@@ -1,11 +1,12 @@
 /**
  * Textos do painel de explicação da aba Recepção UBS, um por aba interna.
  * A aba escolhe o texto pela rota aberta (ex.: "agenda", "pendentes").
+ * Os endpoints de cada aba vêm da lista única em data/endpointsApi.ts (endpointsDaTela).
  */
 import type { ExplicacaoTela } from "./explicacoesCidadao";
 
 /** Explicações por aba interna da recepção (chave = trecho da rota depois de /simulador/recepcao/). */
-const EXPLICACOES: Record<string, ExplicacaoTela> = {
+export const EXPLICACOES_RECEPCAO: Record<string, ExplicacaoTela> = {
   agenda: {
     titulo: "Recepção · Agenda do dia",
     oQueFaz:
@@ -15,13 +16,6 @@ const EXPLICACOES: Record<string, ExplicacaoTela> = {
       "Risco ALTO a partir de 60% de probabilidade de falta.",
       "Selo \"Fez orientação hoje\": lembra a equipe de que a pessoa procurou ajuda pelo app.",
       "Quem chega sem celular é cadastrado no balcão (sem senha) e pode criar a conta depois (RN21).",
-    ],
-    endpoints: [
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "PUT", rota: "/consultas/{id}/status", api: "JAVA" },
-      { metodo: "POST", rota: "/cidadaos", api: "JAVA" },
-      { metodo: "POST", rota: "/consultas", api: "JAVA" },
     ],
   },
   balcao: {
@@ -34,16 +28,6 @@ const EXPLICACOES: Record<string, ExplicacaoTela> = {
       "Sem horário livre, a pessoa entra na lista do dia (só em dia útil).",
       "A orientação no balcão usa as mesmas regras e a mesma verificação de IA do app (só eleva).",
     ],
-    endpoints: [
-      { metodo: "GET", rota: "/cidadaos?cns={nrCns}", api: "JAVA" },
-      { metodo: "POST", rota: "/cidadaos", api: "JAVA" },
-      { metodo: "PUT", rota: "/cidadaos/{id}", api: "JAVA" },
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-      { metodo: "POST", rota: "/consultas", api: "JAVA" },
-      { metodo: "POST", rota: "/verificar-urgencia", api: "FLASK" },
-      { metodo: "GET", rota: "orientação pelo código", api: "FRONT" },
-      { metodo: "POST", rota: "lista do dia", api: "FRONT" },
-    ],
   },
   pendentes: {
     titulo: "Recepção · Pendentes",
@@ -53,11 +37,6 @@ const EXPLICACOES: Record<string, ExplicacaoTela> = {
       "Ordem: prazo vencido sem contato primeiro; depois risco ALTO; depois o prazo mais próximo.",
       "Risco BAIXO: pedido 2 dias úteis antes; ALTO: 3 dias úteis antes, com lembrete; prazo final 1 dia útil antes.",
       "Paciente sem celular e sem recado não tem a vaga liberada automaticamente.",
-    ],
-    endpoints: [
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-      { metodo: "PUT", rota: "/consultas/{id}/status", api: "JAVA" },
     ],
   },
   "lista-do-dia": {
@@ -70,13 +49,6 @@ const EXPLICACOES: Record<string, ExplicacaoTela> = {
       "Recusada ou vencida, a vaga vai para o próximo; quem já tem consulta hoje não recebe oferta.",
       "Demonstração: a lista do dia ainda não existe na API Java. A vaga oferecida e o agendamento usam os horários e as consultas da API.",
     ],
-    endpoints: [
-      { metodo: "GET", rota: "lista do dia e ofertas", api: "FRONT" },
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "GET", rota: "/cidadaos/{id}", api: "JAVA" },
-      { metodo: "POST", rota: "/consultas", api: "JAVA" },
-    ],
   },
   indicadores: {
     titulo: "Recepção · Indicadores",
@@ -87,14 +59,18 @@ const EXPLICACOES: Record<string, ExplicacaoTela> = {
       "Não encaixados: pessoas ainda aguardando na lista do dia (sem contar quem já tem consulta hoje).",
       "Tempo até a consulta: média de dias entre o agendamento e a data da consulta.",
     ],
-    endpoints: [
-      { metodo: "GET", rota: "/consultas", api: "JAVA" },
-      { metodo: "GET", rota: "/unidades/{id}/horarios", api: "JAVA" },
-    ],
   },
 };
 
+/**
+ * Chave da aba interna aberta (sem aba ou aba desconhecida, usa a Agenda).
+ * @param tela trecho da rota depois de /simulador/recepcao/
+ */
+export function chaveTelaRecepcao(tela: string): string {
+  return tela in EXPLICACOES_RECEPCAO ? tela : "agenda";
+}
+
 /** Escolhe a explicação da aba interna aberta (sem aba, usa a Agenda). */
 export function explicacaoRecepcao(tela: string): ExplicacaoTela {
-  return EXPLICACOES[tela] ?? EXPLICACOES.agenda;
+  return EXPLICACOES_RECEPCAO[chaveTelaRecepcao(tela)];
 }
