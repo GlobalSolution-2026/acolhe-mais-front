@@ -1,10 +1,13 @@
 /**
  * Página: UBS próximas (aba Cidadão → celular, /simulador/cidadao/ubs)
- * Lista as UBS em ordem de proximidade pelo CEP informado no Início, com o resultado da orientação no topo.
+ * Lista as UBS em ordem de proximidade pelo CEP informado no Início (ou, sem ele, pelo CEP do cadastro de quem
+ * está logado), com o resultado da orientação no topo.
  * Cada UBS leva aos horários dela (rota com parâmetro ubs/:idUnidade).
  * Veio do protótipo: src/pages/cidadao/Ubs.tsx.
- * Endpoints: GET /unidades (API Java; o filtro UBS é feito no front).
- * Estados: carregando, erro (API fora do ar) e vazio (nenhuma UBS).
+ * Endpoints: GET /unidades (API Java; o filtro UBS é feito no front) e GET /cidadaos/{id} (API Java, só com login
+ * e sem CEP do Início).
+ * Estados: carregando, erro (API fora do ar) e vazio (nenhuma UBS). Se o cadastro não carregar, a lista aparece
+ * mesmo assim, sem ordenar pelo CEP.
  */
 import { useNavigate } from 'react-router-dom';
 import CardUnidade from '../../../components/CardUnidade';
@@ -14,7 +17,7 @@ import MensagemErro from '../../../components/MensagemErro';
 import SeloGravidade from '../../../components/SeloGravidade';
 import { useSimulador } from '../../../context/useSimulador';
 import { useCarregar } from '../../../hooks/useCarregar';
-import { listarUnidades } from '../../../services/api';
+import { buscarCidadao, listarUnidades } from '../../../services/api';
 import { BASE_CELULAR } from '../../../services/navegacao';
 import { ordenarUbsPorCep } from '../../../services/orientacao';
 
@@ -22,12 +25,22 @@ import { ordenarUbsPorCep } from '../../../services/orientacao';
 export default function Ubs() {
   const { estado } = useSimulador();
   const navigate = useNavigate();
-  const { dados: ubs, carregando, erro, recarregar } = useCarregar(() => listarUnidades('UBS'), []);
+  const idCidadao = estado.idCidadaoAtual;
+  const cepInicio = estado.orientacaoAtual?.nrCep || '';
 
-  // CEP do Início (ou do cadastro de quem está logado) define a ordem.
-  const cadastro = estado.cidadaos.find((c) => c.idCidadao === estado.idCidadaoAtual);
-  const cep = estado.orientacaoAtual?.nrCep || cadastro?.nrCep || '';
-  const ordenadas = ubs ? ordenarUbsPorCep(ubs, cep) : [];
+  // Regra: o CEP do Início define a ordem; sem ele, vale o CEP do cadastro de quem está logado.
+  // O cadastro vem da API (buscarCidadao), e não do mock, para não pegar o CEP de uma pessoa de exemplo com o mesmo id.
+  const { dados, carregando, erro, recarregar } = useCarregar(async () => {
+    const [ubs, cadastro] = await Promise.all([
+      listarUnidades('UBS'),
+      // Falha ao buscar o cadastro não impede a lista: só fica sem ordenar pelo CEP.
+      !cepInicio && idCidadao !== null ? buscarCidadao(idCidadao).catch(() => null) : Promise.resolve(null),
+    ]);
+    return { ubs, cepCadastro: cadastro?.nrCep ?? '' };
+  }, [cepInicio, idCidadao]);
+
+  const cep = cepInicio || dados?.cepCadastro || '';
+  const ordenadas = dados ? ordenarUbsPorCep(dados.ubs, cep) : [];
   const resultado = estado.orientacaoAtual?.resultado ?? null;
 
   return (

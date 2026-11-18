@@ -19,6 +19,7 @@ import MensagemErro from '../../../components/MensagemErro';
 import { BOTAO_CONTORNO, BOTAO_PRIMARIO } from '../../../components/celular/classes';
 import FormularioCidadao, { type DadosCidadao } from '../../../components/celular/FormularioCidadao';
 import { useSimulador } from '../../../context/useSimulador';
+import { useAvisos } from '../../../hooks/useAvisos';
 import { useCarregar } from '../../../hooks/useCarregar';
 import { fmtDiaHora } from '../../../lib/datas';
 import { agendarConsulta, atualizarCidadao, buscarCidadao, buscarUnidade, listarHorarios } from '../../../services/api';
@@ -36,6 +37,8 @@ export default function Agendar() {
   const idUnidade = retorno.ubs || estado.horarios.find((h) => h.idHorario === retorno.horario)?.idUnidade || 0;
   const idCidadao = estado.idCidadaoAtual;
 
+  // A consulta nova pode já entrar na janela de confirmação: o sino do celular busca de novo depois de agendar.
+  const { recarregar: recarregarAvisos } = useAvisos();
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<{ mensagem: string; ocupado: boolean } | null>(null);
 
@@ -79,6 +82,7 @@ export default function Agendar() {
         idOrientacao: estado.orientacaoAtual?.resultado?.idOrientacao ?? null,
         ...(retorno.oferta ? { idOferta: retorno.oferta } : {}),
       });
+      recarregarAvisos();
       // A consulta vai junto na navegação (a tela Sucesso não precisa buscar de novo).
       navigate(`${BASE_CELULAR}/sucesso?consulta=${consulta.idConsulta}`, { state: { consulta }, replace: true });
     } catch (e) {

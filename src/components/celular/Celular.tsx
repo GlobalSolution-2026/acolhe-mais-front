@@ -1,10 +1,10 @@
 import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import type { IconType } from 'react-icons';
 import { FiAlertTriangle, FiBell, FiCalendar, FiChevronLeft, FiHome, FiUser } from 'react-icons/fi';
+import { AvisosContext } from '../../context/avisosContexto';
 import { useSimulador } from '../../context/useSimulador';
-import { agora } from '../../lib/relogio';
+import { useCarregarAvisos } from '../../hooks/useAvisos';
 import { BASE_CELULAR, rotaPai } from '../../services/navegacao';
-import { ofertasDoCidadao, precisaConfirmar } from '../../services/regrasAgendamento';
 
 interface ItemBarraProps {
   /** Rota relativa ao celular (ex.: "inicio"). */
@@ -33,6 +33,8 @@ function ItemBarra({ rota, nome, icone: Icone }: ItemBarraProps) {
 /**
  * Moldura do celular do cidadão (aba Cidadão do simulador). Veio do protótipo: LayoutCidadao + LayoutCompartilhado.
  * - Topo: voltar (quando a tela tem uma tela "pai"), logo Acolhe+ e sino de avisos com contador.
+ *   O contador usa os mesmos avisos da tela Avisos (useCarregarAvisos, com GET /consultas), entregues às telas
+ *   pelo AvisosContext. Sem login, mostra 0 sem chamar a API.
  * - Meio: a tela aberta (<Outlet />), que rola dentro do celular.
  * - Barra inferior fixa: Início, Consultas, Emergência (botão redondo vermelho, maior e acima da barra), Avisos e Perfil.
  */
@@ -47,10 +49,9 @@ export default function Celular() {
   const pai = rotaPai(pathname, idUnidade);
 
   // Contador do sino: pedidos de confirmação na janela + ofertas de vaga da lista do dia (só do cidadão logado).
-  const hoje = agora();
-  const avisos =
-    estado.consultas.filter((c) => c.idCidadao === estado.idCidadaoAtual && precisaConfirmar(c, hoje)).length +
-    ofertasDoCidadao(estado.ofertas, estado.listaDoDia, estado.idCidadaoAtual).length;
+  // Carregado uma vez aqui e entregue às telas, para o sino e a tela Avisos mostrarem o mesmo número.
+  const dadosAvisos = useCarregarAvisos();
+  const avisos = dadosAvisos.total;
 
   return (
     <div className="mx-auto w-full max-w-[400px]">
@@ -83,7 +84,9 @@ export default function Celular() {
         {/* pb-12: espaço para o botão de Emergência, que sobe por cima do fim do conteúdo.
             É uma <section> (e não <main>) porque o site já tem o <main> do Layout. */}
         <section aria-label="Tela do celular" className="flex-1 overflow-y-auto bg-fundo p-4 pb-12">
-          <Outlet />
+          <AvisosContext.Provider value={dadosAvisos}>
+            <Outlet />
+          </AvisosContext.Provider>
         </section>
 
         <nav aria-label="Menu do cidadão" className="z-20 flex items-end border-t border-borda bg-branco px-2 pb-2 pt-1">

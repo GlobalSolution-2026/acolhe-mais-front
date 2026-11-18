@@ -4,6 +4,7 @@
  * das consultas de quem está logado.
  * Veio do protótipo: src/pages/cidadao/Avisos.tsx.
  * Endpoints: GET /consultas e PUT /consultas/{id}/status (API Java). Ofertas de vaga: só no front (demonstração).
+ * Os avisos vêm do useAvisos (os mesmos que o sino do Celular conta), então o sino e a tela nunca divergem.
  * Estados: carregando, erro, vazio (nenhum aviso) e "Confirmando...".
  * Regra: a oferta vale 30 min (na demonstração, cada minuto dura 10 s); recusada ou vencida, vai para o próximo da fila.
  */
@@ -16,12 +17,12 @@ import MensagemErro from '../../../components/MensagemErro';
 import SeloDemonstracao from '../../../components/SeloDemonstracao';
 import { BOTAO_CONTORNO, BOTAO_PRIMARIO } from '../../../components/celular/classes';
 import { useSimulador } from '../../../context/useSimulador';
-import { useCarregar } from '../../../hooks/useCarregar';
+import { useAvisos } from '../../../hooks/useAvisos';
 import { fmtDiaHora } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
-import { confirmarConsulta, listarConsultas } from '../../../services/api';
+import { confirmarConsulta } from '../../../services/api';
 import { BASE_CELULAR, queryRetorno } from '../../../services/navegacao';
-import { ofertasDoCidadao, prazoConfirmacao, precisaConfirmar, tempoRestanteOferta } from '../../../services/regrasAgendamento';
+import { prazoConfirmacao, tempoRestanteOferta } from '../../../services/regrasAgendamento';
 import type { OfertaVaga } from '../../../types';
 import { mensagemDoErro } from '../../../utils/erros';
 
@@ -61,21 +62,13 @@ function CardOferta({ oferta }: { oferta: OfertaVaga }) {
 
 /** Tela Avisos do celular. */
 export default function Avisos() {
-  const { estado } = useSimulador();
-  const idCidadao = estado.idCidadaoAtual;
   const [confirmando, setConfirmando] = useState(false);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
 
-  // Pedidos de confirmação: consultas de quem está logado que estão na janela de confirmação.
-  const { dados, carregando, erro, recarregar } = useCarregar(
-    async () => (idCidadao === null ? [] : (await listarConsultas()).filter((c) => c.idCidadao === idCidadao && precisaConfirmar(c, agora()))),
-    [idCidadao, estado.consultas],
-  );
-  // Ofertas da lista do dia buscadas pela conta (ou pela entrada feita sem login).
-  const ofertas = ofertasDoCidadao(estado.ofertas, estado.listaDoDia, idCidadao);
-  const confirmacoes = dados ?? [];
+  // Pedidos de confirmação (consultas na janela de confirmação) e ofertas de vaga de quem está logado.
+  const { confirmacoes, ofertas, carregando, erro, recarregar } = useAvisos();
 
-  /** Confirma a presença pelo app e atualiza a lista. */
+  /** Confirma a presença pelo app e atualiza a lista (e o sino junto). */
   const confirmar = async (idConsulta: number) => {
     const consulta = confirmacoes.find((c) => c.idConsulta === idConsulta);
     if (!consulta) return;
