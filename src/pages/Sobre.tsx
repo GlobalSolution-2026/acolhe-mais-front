@@ -1,183 +1,162 @@
-import { FiBookOpen, FiTarget, FiActivity, FiMapPin, FiLayers } from 'react-icons/fi';
+/**
+ * Página: Sobre (rota "/sobre", página institucional)
+ * Explica o problema que o Acolhe+ ataca: casos leves lotando as urgências e horários da UBS
+ * vazios por falta. Mostra como o SUS se organiza, os números das duas pontas, por que o projeto
+ * começa por São Paulo e o que já existe no mercado.
+ * Veio da demonstração aprovada 02-sobre.html.
+ * Endpoints: nenhum (textos fixos de src/data/sobre.ts).
+ * Estados: não chama API, então não tem carregando, erro ou vazio.
+ */
+import Etiqueta from '../components/Etiqueta';
+import ListaAlternativas from '../components/ListaAlternativas';
+import {
+  ACOLHE_COMPARACAO,
+  ALTERNATIVAS,
+  FONTES_SOBRE,
+  NUMEROS_SAO_PAULO,
+  PONTAS_PROBLEMA,
+  SERVICOS_SUS,
+} from '../data/sobre';
 
+/** Página Sobre, na ordem das seções aprovadas na demonstração. */
 export default function Sobre() {
   return (
-    <div className="min-h-screen bg-white font-sans text-stone-800 animate-fade-in pb-24">
-      
-      {/* 1. HERO SECTION */}
-      <section className="bg-[#004d3a] pt-40 pb-24 px-6 lg:px-16 xl:px-24">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <span className="text-sm font-bold text-[#b5ebd3] tracking-widest uppercase">
-            Sobre o Projeto
-          </span>
-          <h1 className="text-5xl lg:text-7xl font-serif text-white leading-tight font-medium">
-            Entendendo o sistema. <br className="hidden md:block"/>
-            <span className="text-[#b5ebd3] italic">Transformando o acesso.</span>
+    <>
+      {/* 1. Abertura */}
+      <section className="bg-branco">
+        <div className="mx-auto flex max-w-6xl flex-col px-4 py-14 lg:px-6 lg:py-20">
+          <Etiqueta>Sobre o projeto</Etiqueta>
+          <h1 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight text-primaria sm:text-5xl">
+            Duas pontas de um mesmo problema
           </h1>
-        </div>
-      </section>
-
-      {/* 2. CONTEXTO DO PROBLEMA (Rede Hierarquizada) */}
-      <section className="py-24 px-6 lg:px-16 xl:px-24 max-w-7xl mx-auto">
-        <div className="mb-16 max-w-3xl">
-          <h2 className="text-4xl lg:text-5xl font-serif text-[#004d3a] mb-6">A rede de saúde e o seu papel.</h2>
-          <p className="text-lg text-stone-600 leading-relaxed">
-            O Sistema Único de Saúde (SUS) está organizado numa rede hierarquizada. O cidadão é encaminhado ao local certo conforme a complexidade do seu caso, garantindo um atendimento universal e integral.
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-texto">
+            Casos leves lotam as urgências enquanto horários da UBS ficam vazios porque o paciente faltou. O Acolhe+
+            nasceu para ligar essas duas pontas: quem precisa de atendimento e a vaga que ia sobrar.
           </p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="bg-[#fbfdfc] border border-stone-100 p-8 rounded-2xl">
-            <FiActivity className="w-8 h-8 text-[#004d3a] mb-6" />
-            <h3 className="text-xl font-bold text-stone-900 mb-3">O SUS</h3>
-            <p className="text-stone-600 leading-relaxed text-sm">
-              Criado para garantir a saúde como direito de todos, organiza-se por níveis de assistência (do posto de saúde ao hospital de alta complexidade).
-            </p>
+      </section>
+
+      {/* 2. Como o SUS organiza o atendimento */}
+      <section className="border-y border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className="text-2xl font-extrabold text-primaria sm:text-3xl">Como o SUS organiza o atendimento</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            O SUS é dividido por nível de complexidade. Cada serviço cuida de um tipo de situação, e é essa
+            organização que define para onde a pessoa deve ir.
+          </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {SERVICOS_SUS.map(({ nivel, titulo, texto }) => (
+              <div key={titulo} className="rounded-2xl border border-borda bg-branco p-6 shadow-leve">
+                <p className="text-sm font-bold text-textoSuave">{nivel}</p>
+                <h3 className="mt-1 text-xl font-bold text-primaria">{titulo}</h3>
+                <p className="mt-2 text-texto">{texto}</p>
+              </div>
+            ))}
           </div>
-          <div className="bg-[#fbfdfc] border border-stone-100 p-8 rounded-2xl">
-            <FiMapPin className="w-8 h-8 text-[#004d3a] mb-6" />
-            <h3 className="text-xl font-bold text-stone-900 mb-3">APS e UBS</h3>
-            <p className="text-stone-600 leading-relaxed text-sm">
-              A Atenção Primária à Saúde (APS) nas Unidades Básicas de Saúde (UBS) é a porta de entrada, resolvendo a maioria dos problemas de saúde perto de casa.
-            </p>
-          </div>
-          <div className="bg-[#fbfdfc] border border-stone-100 p-8 rounded-2xl">
-            <FiTarget className="w-8 h-8 text-[#004d3a] mb-6" />
-            <h3 className="text-xl font-bold text-stone-900 mb-3">A ESF</h3>
-            <p className="text-stone-600 leading-relaxed text-sm">
-              A Estratégia Saúde da Família (ESF) acompanha um território específico. Porém, milhões de pessoas nos grandes centros ainda não têm uma equipa de referência.
-            </p>
-          </div>
-          <div className="bg-[#fbfdfc] border border-stone-100 p-8 rounded-2xl">
-            <FiLayers className="w-8 h-8 text-[#004d3a] mb-6" />
-            <h3 className="text-xl font-bold text-stone-900 mb-3">A UPA</h3>
-            <p className="text-stone-600 leading-relaxed text-sm">
-              Unidades de Pronto Atendimento focam-se em estabilizar casos de urgência intermediária. Sofrem de superlotação devido à procura indevida de casos pouco urgentes.
+          <div className="mt-6 rounded-2xl border-2 border-menta bg-mentaSuave p-6">
+            <h3 className="text-lg font-bold text-primaria">E a Estratégia Saúde da Família?</h3>
+            <p className="mt-2 text-texto">
+              É o modelo prioritário da Atenção Primária. Cada equipe cuida de 2.000 a 3.500 pessoas de um território,
+              e o agente comunitário de saúde orienta as famílias sobre onde buscar atendimento. Só que a cobertura é
+              desigual: em 2021, cerca de <strong>72,7 milhões de pessoas</strong> não tinham uma equipe de
+              referência, a maioria em cidades grandes.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 3. A SITUAÇÃO EM SÃO PAULO*/}
-      <section className="bg-[#e6f2ed] py-24 px-6 lg:px-16 xl:px-24">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
-          <div className="lg:w-1/2">
-            <h2 className="text-4xl lg:text-5xl font-serif text-[#004d3a] mb-6 leading-tight">
-              O cenário real na cidade de São Paulo.
-            </h2>
-            <p className="text-lg text-stone-700 leading-relaxed">
-              O município enfrenta o desafio de expandir a cobertura e otimizar os recursos disponíveis para acolher uma das maiores populações do país.
-            </p>
+      {/* 3. O problema: as duas pontas e a oportunidade */}
+      <section className="bg-branco">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className="text-2xl font-extrabold text-primaria sm:text-3xl">O problema</h2>
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {PONTAS_PROBLEMA.map(({ rotulo, titulo, texto, numeros }) => (
+              <div key={rotulo} className="flex flex-col gap-4 rounded-2xl border border-borda bg-fundo p-6">
+                <p className="text-sm font-bold text-textoSuave">{rotulo}</p>
+                <h3 className="text-xl font-bold text-primaria">{titulo}</h3>
+                <p className="text-texto">{texto}</p>
+                <ul className="flex flex-col gap-3">
+                  {numeros.map(({ valor, texto: textoNumero }) => (
+                    <li key={valor} className="flex items-baseline gap-3">
+                      <span className="w-20 shrink-0 text-2xl font-extrabold text-primaria">{valor}</span>
+                      <span className="text-texto">{textoNumero}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <div className="lg:w-1/2 w-full grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100">
-              <span className="text-4xl font-serif font-bold text-[#004d3a] block mb-2">47,9%</span>
-              <span className="text-stone-600 text-sm">Cobertura da Estratégia Saúde da Família (ESF) na capital em 2023.</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100">
-              <span className="text-4xl font-serif font-bold text-[#004d3a] block mb-2">483</span>
-              <span className="text-stone-600 text-sm">Unidades Básicas de Saúde (UBS) ativas reportadas em Julho de 2026.</span>
-            </div>
-            <div className="bg-[#004d3a] p-8 rounded-2xl shadow-sm sm:col-span-2">
-              <span className="text-3xl font-serif font-bold text-white block mb-2">Meta de 2/3</span>
-              <span className="text-[#b5ebd3] text-sm">Objetivo de cobertura populacional da ESF estipulado pela prefeitura até 2028.</span>
-            </div>
+          <div className="mt-6 rounded-2xl bg-primaria p-6 text-branco">
+            <h3 className="text-lg font-bold text-menta">A oportunidade</h3>
+            <p className="mt-2">
+              Confirmar as consultas com antecedência e redistribuir os horários reduz as faltas. Em uma unidade de São
+              Paulo, o absenteísmo caiu de 21% para 19%, o que rendeu 560 consultas a mais. O Acolhe+ leva essa ideia
+              um passo adiante: a vaga liberada é oferecida a quem foi orientado a procurar a UBS, em vez de ir à UPA.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* 4. MERCADO E BENCHMARK  */}
-      <section className="py-24 px-6 lg:px-16 xl:px-24 max-w-7xl mx-auto bg-white rounded-3xl my-12">
-        <div className="mb-16">
-          <h2 className="text-4xl lg:text-5xl font-serif text-[#004d3a] mb-6">Mercado e Alternativas</h2>
-          <p className="text-lg text-stone-600 max-w-3xl">
-            Analisámos os sistemas existentes. Nenhuma das soluções atuais liga, num único fluxo, a orientação clínica à disponibilidade real de vagas na rede municipal.
+      {/* 4. Por que São Paulo (cenário A; o cenário B, Minas Gerais, fica para uma etapa seguinte) */}
+      <section className="bg-mentaSuave">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 lg:grid-cols-2 lg:px-6">
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-extrabold text-primaria sm:text-3xl">Por que começamos por São Paulo</h2>
+            <p className="text-texto">
+              O projeto parte das cidades grandes com pouca cobertura da Saúde da Família. Nelas, muita gente não tem
+              uma equipe que acompanhe o seu histórico e diga para onde ir quando aparece um problema de saúde. São
+              Paulo é o exemplo usado como referência.
+            </p>
+            <p className="text-texto">
+              Em cidades onde a Saúde da Família cobre quase toda a população, como em grande parte de Minas Gerais, o
+              Acolhe+ pode encaminhar a pessoa para a própria equipe. Essa adaptação está prevista para uma etapa
+              seguinte.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {NUMEROS_SAO_PAULO.map(({ valor, texto }) => (
+              <div key={valor} className="rounded-2xl bg-branco p-6 shadow-leve">
+                <p className="text-3xl font-extrabold text-primaria">{valor}</p>
+                <p className="mt-1 text-texto">{texto}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. O que já existe */}
+      <section className="bg-branco">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <h2 className="text-2xl font-extrabold text-primaria sm:text-3xl">O que já existe</h2>
+          <p className="mt-3 max-w-3xl text-texto">
+            Cada alternativa resolve uma parte do problema. Os sistemas públicos agendam, mas não dizem onde ir. Os
+            serviços de orientação informam, mas não agendam.
+          </p>
+          <ListaAlternativas alternativas={ALTERNATIVAS} acolhe={ACOLHE_COMPARACAO} />
+          <p className="mt-6 max-w-3xl text-texto">
+            O Acolhe+ é uma <strong>inovação incremental</strong>: não substitui a UBS, a UPA nem o sistema de
+            agendamento da prefeitura. Ele melhora processos que a rede já faz e foi pensado para se integrar ao Agenda
+            Fácil.
           </p>
         </div>
-
-        {/* Grelha de Alternativas e O Nosso Diferencial */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          
-          {/* Card 1: Sistemas Públicos */}
-          <div className="bg-[#fbfdfc] border border-stone-200 p-8 rounded-3xl flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-3">Sistemas Públicos (Ex: Agenda Fácil, Meu SUS Digital)</span>
-              <h3 className="text-xl font-serif text-stone-900 mb-3">Focam-se apenas no agendamento</h3>
-              <p className="text-stone-600 text-sm leading-relaxed">
-                Permitem marcar consultas, mas não realizam triagem de sintomas nem orientam o cidadão sobre qual serviço procurar, gerando idas desnecessárias à UPA.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-stone-100 text-xs font-semibold text-rose-600">
-              ✕ Falta orientação clínica
-            </div>
-          </div>
-
-          {/* Card 2: Aplicativos de Triagem */}
-          <div className="bg-[#fbfdfc] border border-stone-200 p-8 rounded-3xl flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block mb-3">Apps de Saúde (Ex: Ada Health)</span>
-              <h3 className="text-xl font-serif text-stone-900 mb-3">Focam-se apenas na triagem</h3>
-              <p className="text-stone-600 text-sm leading-relaxed">
-                Oferecem avaliações de sintomas baseadas em inteligência artificial, mas funcionam de forma isolada e não têm qualquer ligação com a agenda de vagas do SUS.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-stone-100 text-xs font-semibold text-rose-600">
-              ✕ Sem integração com o SUS
-            </div>
-          </div>
-
-          {/* Card 3: O Nosso Diferencial*/}
-          <div className="bg-[#004d3a] text-white p-8 rounded-3xl flex flex-col justify-between shadow-xl relative overflow-hidden">
-            <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#00d186]/10 rounded-full blur-2xl"></div>
-            <div>
-              <span className="text-xs font-bold text-[#b5ebd3] uppercase tracking-wider block mb-3">A Nossa Solução</span>
-              <h3 className="text-2xl font-serif text-white mb-3">Acolhe+ (Tudo num só fluxo)</h3>
-              <p className="text-emerald-50 text-sm leading-relaxed font-light">
-                Une a triagem inteligente de sintomas diretamente às vagas ociosas da APS, prevendo faltas com IA e reduzindo o absenteísmo e a superlotação.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-white/10 text-xs font-semibold text-[#b5ebd3]">
-              ✓ Triagem + Agendamento + IA
-            </div>
-          </div>
-
-        </div>
-        
-        <div className="bg-stone-50 p-6 rounded-2xl border border-stone-200 text-sm text-stone-600 leading-relaxed">
-          <strong className="text-stone-900 block mb-2">Conclusão de mercado:</strong>
-          Enquanto as alternativas dividem os processos em etapas separadas ou focam-se exclusivamente no setor privado (como a <em>Doctoralia</em>), o <strong>Acolhe+</strong> integra toda a jornada do cidadão com a realidade da rede pública municipal.
-        </div>
       </section>
 
-      {/* 5. TIPO DE INOVAÇÃO & REFERÊNCIAS */}
-      <section className="py-24 px-6 lg:px-16 xl:px-24 bg-[#004d3a] text-white">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
-          <div className="lg:w-1/2 space-y-6">
-            <h2 className="text-3xl lg:text-4xl font-serif text-[#b5ebd3]">Inovação Incremental</h2>
-            <p className="text-lg text-emerald-50 leading-relaxed font-light">
-              O Acolhe+ classifica-se como uma <strong>inovação incremental</strong>. Não viemos substituir a UBS, a UPA ou os robustos sistemas da prefeitura (como o Agenda Fácil).
-            </p>
-            <p className="text-lg text-emerald-50 leading-relaxed font-light">
-              A nossa plataforma atua otimizando processos que a rede já executa, ligando a orientação do cidadão diretamente à vaga ociosa, oferecendo menor risco de investimento público e fácil adoção.
-            </p>
-          </div>
-          
-          <div className="lg:w-1/2 border-t lg:border-t-0 lg:border-l border-white/20 pt-10 lg:pt-0 lg:pl-16">
-            <div className="flex items-center gap-3 mb-6">
-              <FiBookOpen className="w-6 h-6 text-[#b5ebd3]" />
-              <h3 className="text-2xl font-serif text-white">Referências Base</h3>
-            </div>
-            <ul className="space-y-4 text-sm text-emerald-100/80 font-light leading-relaxed">
-              <li>ANZILIERO, F. et al. <em>Sistema Manchester em emergência...</em> (2016).</li>
-              <li>BRASIL. Ministério da Saúde. <em>PNAB e ESF</em> (2017).</li>
-              <li>MORAIS, R. M. et al. <em>Gestão do absenteísmo na APS...</em> (2023).</li>
-              <li>SÃO PAULO. <em>Programa de Metas 2025-2028 e Censo UBS</em>.</li>
+      {/* 6. Fontes (fechadas por padrão, para não pesar a leitura) */}
+      <section className="border-t border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
+          <details>
+            <summary className="min-h-12 cursor-pointer content-center font-bold text-primaria">
+              Fontes dos dados desta página
+            </summary>
+            <p className="mt-3 text-sm text-textoSuave">Referências completas no documento do projeto.</p>
+            <ul className="mt-2 flex flex-col gap-1 text-sm text-textoSuave">
+              {FONTES_SOBRE.map((fonte) => (
+                <li key={fonte}>{fonte}</li>
+              ))}
             </ul>
-        
-          </div>
+          </details>
         </div>
       </section>
-
-    </div>
+    </>
   );
 }

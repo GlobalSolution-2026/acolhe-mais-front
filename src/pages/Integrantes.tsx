@@ -1,105 +1,80 @@
-import { Link } from 'react-router-dom';
-import Botao from '../components/Botao';
+/**
+ * Página: Integrantes (rotas "/integrantes" e "/integrantes/:rm", página institucional)
+ * Lista os cinco integrantes em cartões. A rota com parâmetro /integrantes/:rm abre o painel
+ * lateral com o perfil por cima da lista (fecha pelo ✕, com Esc ou clicando fora).
+ * Veio da demonstração aprovada 06-integrantes.html, mantendo o painel que já existia na develop.
+ * Endpoints: nenhum (dados fixos de src/data/integrantes.ts).
+ * Estados: RM inexistente na URL mostra só a lista, sem painel.
+ */
+import { useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-interface Integrante {
-  rm: string;
-  nome: string;
-  funcao: string;
-  turma: string;
-  foto: string;
-  github: string;
-  linkedin: string;
-  contribuicao: string[];
-}
+import CardIntegrante from '../components/CardIntegrante';
+import Etiqueta from '../components/Etiqueta';
+import PainelIntegrante from '../components/PainelIntegrante';
+import { INTEGRANTES } from '../data/integrantes';
 
-const equipe: Integrante[] = [
-  {
-    rm: '570281',
-    nome: 'Ana Carolina Orcelli',
-    funcao: 'Líder do Projeto',
-    turma: '1TDSPI',
-    foto: 'https://github.com/github.png',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    contribuicao: ['Colocar Contribuição'], // Colocar a contribuição 
-    },
-  {
-    rm: '570412',
-    nome: 'Cauã Mathias Bertini',
-    funcao: 'Back-end (Python)',
-    turma: '1TDSPI',
-    foto: 'https://github.com/github.png',
-    github: 'https://github.com/duduutech',
-    linkedin: 'https://linkedin.com',
-    contribuicao: ['Colocar Contribuição'], 
-  },
-  {
-    rm: '573178',
-    nome: 'Eduardo Lima de Souza',
-    funcao: 'Front-End',
-    turma: '1TDSPW',
-    foto: 'https://github.com/github.png',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    contribuicao: ['Colocar Contribuição'], // Colocar a contribuição 
-  },
-  {
-    rm: '571016',
-    nome: 'Nicolas Frazão Viera Molina',
-    funcao: 'Inteligencia Artificial',
-    turma: '1TDSPI',
-    foto: 'https://github.com/github.png',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    contribuicao: ['Colocar Contribuição'],
-  },
-  {
-    rm: '572860',
-    nome: 'Nicolas Rodrigues Martins',
-    funcao: 'Inteligência Artificial',
-    turma: '1TDSPI',
-    foto: 'https://github.com/github.png',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    contribuicao: ['Colocar Contribuição'],
-  },
-];
-
+/** Página Integrantes. O RM da URL (useParams) decide qual perfil fica aberto. */
 export default function Integrantes() {
-  return (
-    <div className="min-h-screen pt-28 pb-12 px-4 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-[#004d3a] text-center mb-2">Nossa Equipe</h1>
-      <p className="text-stone-600 text-center mb-10">Conheça os desenvolvedores por trás do Acolhe+</p>
-      
+  const { rm } = useParams<{ rm?: string }>();
+  const navigate = useNavigate();
+  const selecionado = INTEGRANTES.find((integrante) => integrante.rm === rm);
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {equipe.map((membro) => (
-          <div 
-            key={membro.rm} 
-            className="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-all group"
-          >
-            <img 
-              src={membro.foto} 
-              alt={membro.nome} 
-              className="w-20 h-20 rounded-full object-cover mb-4 border-2 border-[#148565]/20 group-hover:border-[#148565] transition-colors"
-            />
-            <h2 className="text-xl font-bold text-stone-800">{membro.nome}</h2>
-            <p className="text-[#148565] font-medium text-sm mb-1">RM: {membro.rm}</p>
-            <p className="text-xs text-stone-500 mb-6">{membro.funcao}</p>
-            
-            <div className="mt-auto w-full">
-              <Link to={`/integrantes/${membro.rm}`}>
-                <Botao 
-                  variante="secundario" 
-                  className="w-full border-2 border-[#148565] text-[#148565] hover:bg-[#148565] hover:text-white transition-colors text-xs py-2"
-                >
-                  Ver Detalhes
-                </Botao>
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+  /** Fecha o painel voltando para a lista. */
+  const fecharPainel = useCallback(() => navigate('/integrantes'), [navigate]);
+
+  // Título da aba com o nome de quem está aberto.
+  useEffect(() => {
+    document.title = selecionado ? `${selecionado.nome} | Acolhe+` : 'Integrantes | Acolhe+';
+    return () => {
+      document.title = 'Acolhe+';
+    };
+  }, [selecionado]);
+
+  // Esc fecha o painel; o ouvinte só existe enquanto ele está aberto.
+  useEffect(() => {
+    if (!selecionado) return;
+    const fecharComEsc = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') fecharPainel();
+    };
+    window.addEventListener('keydown', fecharComEsc);
+    return () => window.removeEventListener('keydown', fecharComEsc);
+  }, [selecionado, fecharPainel]);
+
+  return (
+    <>
+      {/* Topo */}
+      <section className="bg-branco">
+        <div className="mx-auto flex max-w-6xl flex-col px-4 py-14 lg:px-6 lg:py-20">
+          <Etiqueta>Integrantes</Etiqueta>
+          <h1 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight text-primaria sm:text-5xl">
+            Quem faz o Acolhe+
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-texto">
+            Cinco estudantes de Análise e Desenvolvimento de Sistemas da FIAP. Cada um ficou à frente de uma parte da
+            solução, e o resultado foi integrado na Global Solution 2026/2.
+          </p>
+        </div>
+      </section>
+
+      {/* Cartões */}
+      <section className="border-t border-borda bg-fundo">
+        <div className="mx-auto max-w-6xl px-4 py-14 lg:px-6">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {INTEGRANTES.map((integrante) => (
+              <CardIntegrante key={integrante.rm} integrante={integrante} />
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Painel lateral do perfil (/integrantes/:rm), com fundo escuro que fecha ao clicar */}
+      {selecionado && (
+        <>
+          <div aria-hidden="true" onClick={fecharPainel} className="fixed inset-0 z-40 bg-primariaEscura/60" />
+          <PainelIntegrante integrante={selecionado} todos={INTEGRANTES} onFechar={fecharPainel} />
+        </>
+      )}
+    </>
   );
 }

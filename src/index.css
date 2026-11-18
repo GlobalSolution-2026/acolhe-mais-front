@@ -1,9 +1,46 @@
 @import "tailwindcss";
 
+/*
+ * Tokens do site inteiro (Tailwind v4: as cores ficam no bloco @theme, não existe tailwind.config).
+ * Paleta do protótipo: azul-marinho + menta, usada nas páginas institucionais e no simulador.
+ * Usar nas classes: bg-primaria, text-textoSuave, font-nunito... (nada de cor em hexadecimal nas classes).
+ * As cores de gravidade são só para selos de gravidade, lista do dia, botão de Emergência
+ * e a faixa de emergência do topo do site.
+ */
+@theme {
+  --color-primaria: #1E3A5F;
+  --color-primariaEscura: #152A45;
+  --color-menta: #A7F3D0;
+  --color-mentaSuave: #DDF7EC;
+  --color-fundo: #F8FAFC;
+  --color-texto: #1E293B;
+  --color-textoSuave: #64748B;
+  --color-borda: #E2E8F0;
+  --color-branco: #FFFFFF;
+
+  --color-gravidade-vermelho: #D32F2F;
+  --color-gravidade-laranja: #F57C00;
+  --color-gravidade-amarelo: #FBC02D;
+  --color-gravidade-verde: #388E3C;
+  --color-gravidade-azul: #1976D2;
+
+  --font-nunito: "Nunito", sans-serif;
+
+  --shadow-leve: 0 2px 10px -2px rgb(30 58 95 / 0.12);
+  --shadow-celular: 0 30px 60px -20px rgb(21 42 69 / 0.45);
+}
+
 @layer base {
+  /* Fonte Nunito e cores do tema em todo o site (o link da fonte está no index.html). */
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, sans-serif;
+    @apply bg-fundo text-texto font-nunito antialiased;
+  }
+
+  /* Rolagem suave para as âncoras (ex.: atalhos da Solução), só para quem não pediu menos movimento. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 }
 

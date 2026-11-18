@@ -1,0 +1,278 @@
+/**
+ * Regras de agendamento do Acolhe+ (funções puras, sem React; vieram do protótipo).
+ * Prazos vêm de src/data/configuracoes.ts. Resumo das regras de confirmação (só dias úteis):
+ * - risco BAIXO: pedido de confirmação 2 dias úteis antes;
+ * - risco ALTO (probabilidade de falta >= 0,60): pedido 3 dias úteis antes, com lembrete;
+ * - prazo final: 1 dia útil antes. Quem não confirma tem o horário liberado para a lista do dia.
+ */
+import {
+  ANTECEDENCIA_MINIMA_LISTA_DIA_MIN,
+  ESCALA_DEMO_SEGUNDOS_POR_MIN,
+  PRAZO_ACEITAR_OFERTA_MIN,
+  CONFIRMACAO_RISCO_ALTO_DIAS_UTEIS,
+  CONFIRMACAO_RISCO_BAIXO_DIAS_UTEIS,
+  PRAZO_FINAL_CONFIRMACAO_DIAS_UTEIS,
+  LIMIAR_RISCO_ALTO,
+} from "../data/configuracoes";
+import { chaveDia, isDiaUtil, subtrairDiasUteis } from "../lib/datas";
+import type { Cidadao, Consulta, EntradaListaDoDia, OfertaVaga, Horario, RiscoFalta } from "../types";
+import type { Orientacao } from "../types/orientacao";
+
+/** Contato válido: celular ou telefone de recado preenchido. */
+export function temContatoValido(c: Pick<Cidadao, "nrCelular" | "nrContatoRecado">): boolean {
+  return Boolean(c.nrCelular.trim() || c.nrContatoRecado.trim());
+}
+
+/** Risco de falta pela pontuação do modelo: ALTO quando vlProbFalta >= LIMIAR_RISCO_ALTO. */
+export function classificarRiscoFalta(vlProbFalta: number): RiscoFalta {
+  return vlProbFalta >= LIMIAR_RISCO_ALTO ? "ALTO" : "BAIXO";
+}
+
+/** Prazo final sem a regra de dispensa: 1 dia útil antes da consulta. */
+function prazoFinal(dtHorario: string): Date {
+  return subtrairDiasUteis(new Date(dtHorario), PRAZO_FINAL_CONFIRMACAO_DIAS_UTEIS);
+}
+
+/** Consultas marcadas depois do prazo final (menos de 1 dia útil de antecedência) dispensam confirmação. */
+export function dispensadaConfirmacao(c: Pick<Consulta, "dtAgendamento" | "dtHorario">): boolean {
+  // Sem a data do agendamento (dado incompleto), a consulta segue a regra normal de confirmação.
+  if (!c.dtAgendamento) return false;
+  return new Date(c.dtAgendamento) > prazoFinal(c.dtHorario);
+}
+
+/** Momento em que o pedido de confirmação é enviado: 2 dias úteis antes (BAIXO) ou 3 com lembrete (ALTO). */
+export function inicioPedidoConfirmacao(c: Pick<Consulta, "dtAgendamento" | "dtHorario" | "dsRiscoFalta">): Date | null {
+  if (dispensadaConfirmacao(c)) return null;
+  const dias = c.dsRiscoFalta === "ALTO" ? CONFIRMACAO_RISCO_ALTO_DIAS_UTEIS : CONFIRMACAO_RISCO_BAIXO_DIAS_UTEIS;
+  return subtrairDiasUteis(new Date(c.dtHorario), dias);
+}
+
+/** Prazo final para confirmar: 1 dia útil antes da consulta. */
+export function prazoConfirmacao(c: Pick<Consulta, "dtAgendamento" | "dtHorario">): Date | null {
+  if (dispensadaConfirmacao(c)) return null;
+  return prazoFinal(c.dtHorario);
+}
+
+/** A consulta está na janela em que o cidadão precisa confirmar presença. */
+export function precisaConfirmar(c: Consulta, agora: Date): boolean {
+  if (c.dsStatus !== "AGENDADA") return false;
+  const inicio = inicioPedidoConfirmacao(c);
+  const prazo = prazoConfirmacao(c);
+  if (!inicio || !prazo) return false;
+  return agora >= inicio && agora <= prazo;
+}
+
+/**
+ * Não confirmadas até o prazo final viram LIBERADA.
+ * Exceção: paciente sem nenhum contato válido não tem a vaga liberada automaticamente.
+ */
+export function deveLiberar(c: Consulta, cidadao: Pick<Cidadao, "nrCelular" | "nrContatoRecado"> | undefined, agora: Date): boolean {
+  if (c.dsStatus !== "AGENDADA") return false;
+  const prazo = prazoConfirmacao(c);
+  if (!prazo || agora <= prazo) return false;
+  return cidadao ? temContatoValido(cidadao) : false;
+}
+
+const PESO_COR = { VERDE: 0, AZUL: 1 } as const;
+
+/**
+ * Ordem da lista do dia: quem ficou de um dia para o outro (prioridade) primeiro;
+ * depois verde antes de azul; dentro da cor, ordem de chegada.
+ */
+export function ordenarListaDoDia(entradas: EntradaListaDoDia[]): EntradaListaDoDia[] {
+  return [...entradas]
+    .filter((e) => e.status === "AGUARDANDO")
+    .sort(
+      (a, b) =>
+        Number(b.flPrioridade) - Number(a.flPrioridade) ||
+        PESO_COR[a.dsCor] - PESO_COR[b.dsCor] ||
+        new Date(a.dtEntrada).getTime() - new Date(b.dtEntrada).getTime(),
+    );
+}
+
+/** Posição (1-based) de uma entrada na fila; 0 se não estiver aguardando. */
+export function posicaoNaFila(entradas: EntradaListaDoDia[], idEntrada: number): number {
+  const i = ordenarListaDoDia(entradas).findIndex((e) => e.idEntrada === idEntrada);
+  return i < 0 ? 0 : i + 1;
+}
+
+export interface Indicadores {
+  /** Faltas ÷ consultas agendadas (null se não há consultas). */
+  taxaAbsenteismo: number | null;
+  /** Horários liberados e reocupados ÷ horários liberados (null se não há liberações). */
+  taxaReaproveitamento: number | null;
+  /** Pessoas ainda aguardando encaixe na lista do dia (sem contar quem já tem consulta hoje). */
+  naoEncaixadas: number;
+  /** REALIZADA ÷ (REALIZADA + FALTA) com orientação (null se não há orientações). */
+  comparecimentoAposOrientacao: number | null;
+}
+
+/**
+ * Indicadores da recepção (Tabela 5 do texto do projeto).
+ * Taxa de absenteísmo, reaproveitamento de horários liberados, pessoas não encaixadas
+ * e comparecimento de quem passou pela orientação.
+ */
+export function calcularIndicadores(consultas: Consulta[], listaDoDia: EntradaListaDoDia[], agora = new Date()): Indicadores {
+  const encerradas = consultas.filter((c) => (c.dsStatus === "REALIZADA" || c.dsStatus === "FALTA") && new Date(c.dtHorario) < agora);
+  const faltas = encerradas.filter((c) => c.dsStatus === "FALTA").length;
+  const taxaAbsenteismo = encerradas.length > 0 ? faltas / encerradas.length : null;
+
+  const liberadas = consultas.filter((c) => c.dsStatus === "LIBERADA");
+  const reocupadas = liberadas.filter((l) =>
+    consultas.some(
+      (o) =>
+        o.idConsulta !== l.idConsulta &&
+        o.idHorario === l.idHorario &&
+        o.dsStatus !== "LIBERADA" &&
+        new Date(o.dtAgendamento ?? 0).getTime() > new Date(l.dtAgendamento ?? 0).getTime(),
+    ),
+  );
+  const taxaReaproveitamento = liberadas.length > 0 ? reocupadas.length / liberadas.length : null;
+
+  const comOrientacao = encerradas.filter((c) => c.idOrientacao !== null);
+  const realizadas = comOrientacao.filter((c) => c.dsStatus === "REALIZADA");
+  const comparecimentoAposOrientacao = comOrientacao.length > 0 ? realizadas.length / comOrientacao.length : null;
+
+  // Quem já tem consulta hoje será atendido: não conta como não encaixado.
+  const hoje = chaveDia(agora.toISOString());
+  const naoEncaixadas = ordenarListaDoDia(listaDoDia).filter((e) => !consultaNoDia(consultas, e.idCidadao, hoje)).length;
+  return { taxaAbsenteismo, taxaReaproveitamento, naoEncaixadas, comparecimentoAposOrientacao };
+}
+
+/**
+ * Tempo médio até a consulta (Tabela 5 do texto): média de dias entre o agendamento e a data da consulta.
+ * Mede quanto a pessoa espera para ser atendida na UBS.
+ * @returns média em dias (com 1 casa) ou null se nenhuma consulta tiver a data do agendamento
+ */
+export function tempoMedioAteConsulta(consultas: Consulta[]): number | null {
+  const dias = consultas
+    .filter((c) => c.dtAgendamento && c.dsStatus !== "LIBERADA")
+    .map((c) => (new Date(c.dtHorario).getTime() - new Date(c.dtAgendamento ?? c.dtHorario).getTime()) / 86_400_000)
+    .filter((d) => d >= 0);
+  if (dias.length === 0) return null;
+  return Math.round((dias.reduce((a, b) => a + b, 0) / dias.length) * 10) / 10;
+}
+
+/** Consulta ativa (agendada ou confirmada) da pessoa no dia "aaaa-mm-dd"; a mais cedo, se houver mais de uma. */
+export function consultaNoDia(consultas: Consulta[], idCidadao: number | null, dia: string): Consulta | undefined {
+  if (idCidadao === null) return undefined;
+  return consultas
+    .filter((c) => c.idCidadao === idCidadao && (c.dsStatus === "AGENDADA" || c.dsStatus === "CONFIRMADA") && chaveDia(c.dtHorario) === dia)
+    .sort((a, b) => a.dtHorario.localeCompare(b.dtHorario))[0];
+}
+
+/** Orientações do dia da pessoa (vinculadas pelo Balcão/app ou pela lista do dia), da mais recente para a mais antiga. */
+export function orientacoesDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], idCidadao: number | null, dia: string): Orientacao[] {
+  if (idCidadao === null) return [];
+  const daLista = new Set(listaDoDia.filter((e) => e.idCidadao === idCidadao).map((e) => e.idOrientacao));
+  return orientacoes
+    .filter((o) => (o.idCidadao === idCidadao || daLista.has(o.idOrientacao)) && chaveDia(o.dtOrientacao) === dia)
+    .sort((a, b) => b.dtOrientacao.localeCompare(a.dtOrientacao));
+}
+
+/** A orientação mais recente do dia (selo da Agenda). */
+export function orientacaoDoDia(orientacoes: Orientacao[], listaDoDia: EntradaListaDoDia[], idCidadao: number | null, dia: string): Orientacao | undefined {
+  return orientacoesDoDia(orientacoes, listaDoDia, idCidadao, dia)[0];
+}
+
+/** Não repetir destinatários, não devolver a quem perdeu e pular quem já tem consulta no dia da vaga. */
+export function escolherDestinatarioOferta(fila: EntradaListaDoDia[], ofertas: OfertaVaga[], horario: Pick<Horario, "idHorario" | "dtHorario">,
+  idCidadaoQuePerdeu: number | null, consultas: Consulta[]): EntradaListaDoDia | undefined {
+  const dia = chaveDia(horario.dtHorario);
+  return ordenarListaDoDia(fila).find((e) =>
+    (idCidadaoQuePerdeu === null || e.idCidadao !== idCidadaoQuePerdeu) &&
+    !consultaNoDia(consultas, e.idCidadao, dia) &&
+    !ofertas.some((o) => o.idEntrada === e.idEntrada && (o.status === "PENDENTE" ||
+      (o.idHorario === horario.idHorario && (o.status === "RECUSADA" || o.status === "EXPIRADA")))));
+}
+
+/** A lista do dia só funciona em dia útil. */
+export const MENSAGEM_LISTA_SO_DIA_UTIL = "A lista do dia funciona só em dias úteis.";
+/** Regra: a lista do dia só abre em dia útil. */
+export function listaDoDiaAberta(agora: Date): boolean {
+  return isDiaUtil(agora);
+}
+
+/**
+ * Vaga para a lista do dia (oferta manual, automática e repasse): horário livre de HOJE (dia útil),
+ * começando daqui a pelo menos ANTECEDENCIA_MINIMA_LISTA_DIA_MIN minutos e sem oferta pendente.
+ */
+export function horarioOferecivel(h: Horario, ofertas: OfertaVaga[], agora: Date): boolean {
+  return !h.flOcupado && listaDoDiaAberta(agora) && chaveDia(h.dtHorario) === chaveDia(agora.toISOString()) &&
+    new Date(h.dtHorario).getTime() >= agora.getTime() + ANTECEDENCIA_MINIMA_LISTA_DIA_MIN * 60_000 &&
+    !ofertas.some((o) => o.idHorario === h.idHorario && o.status === "PENDENTE");
+}
+
+/**
+ * Segundos reais que faltam para a oferta de vaga vencer.
+ * Regra: 30 min para aceitar; na demonstração cada minuto dura 10 s (ESCALA_DEMO_SEGUNDOS_POR_MIN).
+ */
+export function segundosRestantesOferta(oferta: OfertaVaga, agora: Date): number {
+  return Math.max(0, Math.ceil((PRAZO_ACEITAR_OFERTA_MIN * ESCALA_DEMO_SEGUNDOS_POR_MIN * 1000 -
+    (agora.getTime() - new Date(oferta.dtCriacao).getTime())) / 1000));
+}
+
+/** Tempo que falta para a oferta vencer, em minutos simulados ("mm:ss"), para o cronômetro na tela. */
+export function tempoRestanteOferta(oferta: OfertaVaga, agora: Date): string {
+  const duracao = PRAZO_ACEITAR_OFERTA_MIN * ESCALA_DEMO_SEGUNDOS_POR_MIN * 1000;
+  const msRestantes = Math.max(0, Math.min(duracao, duracao - (agora.getTime() - new Date(oferta.dtCriacao).getTime())));
+  const segundosSimulados = Math.ceil(msRestantes * 60 / (ESCALA_DEMO_SEGUNDOS_POR_MIN * 1000));
+  return `${String(Math.floor(segundosSimulados / 60)).padStart(2, "0")}:${String(segundosSimulados % 60).padStart(2, "0")}`;
+}
+
+/** Entrada do app que pertence a quem está usando agora (null = sem login, só a entrada feita sem login). */
+const ehDoCidadao = (e: EntradaListaDoDia, idCidadaoAtual: number | null) => e.flCidadao && e.idCidadao === idCidadaoAtual;
+
+/** Entrada AGUARDANDO do cidadão atual na lista do dia; nunca a de outra conta que usou o app antes. */
+export function entradaDoCidadao(fila: EntradaListaDoDia[], idCidadaoAtual: number | null): EntradaListaDoDia | undefined {
+  return fila.find((e) => ehDoCidadao(e, idCidadaoAtual) && e.status === "AGUARDANDO");
+}
+
+/**
+ * Ao entrar (login ou conta nova), vincula à conta só a entrada feita sem login antes dele.
+ * Entradas de outras contas continuam delas; se a conta já está na lista, nada muda.
+ */
+export function vincularEntradaSemLogin(fila: EntradaListaDoDia[], idCidadao: number, nmCidadao: string | undefined): EntradaListaDoDia[] {
+  if (entradaDoCidadao(fila, idCidadao)) return fila;
+  return fila.map((x) => (x.flCidadao && x.idCidadao === null ? { ...x, idCidadao, nmCidadao: nmCidadao ?? x.nmCidadao } : x));
+}
+
+/** Ofertas de vaga pendentes do cidadão logado (busca pela conta, nunca de outra pessoa que usou o app). */
+export function ofertasDoCidadao(ofertas: OfertaVaga[], fila: EntradaListaDoDia[], idCidadaoAtual: number | null): OfertaVaga[] {
+  return ofertas.filter((o) => o.status === "PENDENTE" && fila.some((e) => e.idEntrada === o.idEntrada && ehDoCidadao(e, idCidadaoAtual)));
+}
+
+/** AGENDADA com prazo de confirmação vencido, sem contato válido e que ainda não aconteceu: não é liberada e segue pendente. */
+export function prazoVencidoSemContato(c: Consulta, cidadao: Pick<Cidadao, "nrCelular" | "nrContatoRecado"> | undefined, agora: Date): boolean {
+  const prazo = prazoConfirmacao(c);
+  return c.dsStatus === "AGENDADA" && prazo !== null && agora > prazo &&
+    new Date(c.dtHorario).getTime() > agora.getTime() && !(cidadao && temContatoValido(cidadao));
+}
+
+/**
+ * Fonte única da lista e do contador de confirmações da recepção.
+ * Inclui as de prazo vencido sem contato (primeiro, da consulta mais próxima); depois risco ALTO e prazo mais próximo.
+ */
+export function listarPendentesConfirmacao(consultas: Consulta[], horarios: Horario[], cidadaos: Cidadao[], idUnidade: number, agora: Date): Consulta[] {
+  const ids = new Set(horarios.filter((h) => h.idUnidade === idUnidade).map((h) => h.idHorario));
+  const vencida = (c: Consulta) => prazoVencidoSemContato(c, cidadaos.find((p) => p.idCidadao === c.idCidadao), agora);
+  return consultas.filter((c) => c.idHorario !== undefined && ids.has(c.idHorario) && (precisaConfirmar(c, agora) || vencida(c))).sort((a, b) =>
+    Number(vencida(b)) - Number(vencida(a)) ||
+    (vencida(a) && vencida(b) ? a.dtHorario.localeCompare(b.dtHorario) : 0) ||
+    Number(b.dsRiscoFalta === "ALTO") - Number(a.dsRiscoFalta === "ALTO") ||
+    (prazoConfirmacao(a)?.getTime() ?? 0) - (prazoConfirmacao(b)?.getTime() ?? 0));
+}
+
+/** Pode cancelar: consulta agendada ou confirmada que ainda não aconteceu. */
+export function podeCancelar(c: Pick<Consulta, "dsStatus" | "dtHorario">, agora: Date): boolean {
+  return (c.dsStatus === "AGENDADA" || c.dsStatus === "CONFIRMADA") && new Date(c.dtHorario).getTime() > agora.getTime();
+}
+
+/** Recepção: presença só no dia da consulta; falta só depois do horário. Só para AGENDADA ou CONFIRMADA. */
+export function acoesPresenca(c: Pick<Consulta, "dsStatus" | "dtHorario">, agora: Date): { presenca: boolean; falta: boolean } {
+  const ativa = c.dsStatus === "AGENDADA" || c.dsStatus === "CONFIRMADA";
+  return {
+    presenca: ativa && chaveDia(c.dtHorario) === chaveDia(agora.toISOString()),
+    falta: ativa && agora.getTime() > new Date(c.dtHorario).getTime(),
+  };
+}
