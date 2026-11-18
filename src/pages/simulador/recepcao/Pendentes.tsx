@@ -4,7 +4,7 @@
  * o prazo e os contatos. A recepção registra "Confirmado por telefone", "Confirmado presencialmente"
  * ou "Cancelou por telefone".
  * Veio do protótipo: src/pages/recepcao/Pendentes.tsx.
- * Endpoints: GET /consultas, GET /unidades/{id}/horarios e PUT /consultas/{id}/status (API Java).
+ * Endpoints: GET /consultas, GET /unidades/{id}/horarios, GET /cidadaos/{id} e PUT /consultas/{id}/status (API Java).
  * Estados: carregando, erro, vazio (nenhuma pendente), "Aguarde..." e erro das ações.
  * Regra: paciente sem celular e sem recado não tem a vaga liberada automaticamente (aparece com o aviso).
  */
@@ -18,7 +18,8 @@ import { useSimulador } from '../../../context/useSimulador';
 import { useCarregar } from '../../../hooks/useCarregar';
 import { fmtDiaHora } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
-import { cancelarConsulta, confirmarConsulta, listarConsultas, listarHorarios } from '../../../services/api';
+import { buscarCidadao, cancelarConsulta, confirmarConsulta, listarConsultas, listarHorarios } from '../../../services/api';
+import type { Cidadao } from '../../../types';
 import { listarPendentesConfirmacao, prazoConfirmacao, prazoVencidoSemContato, temContatoValido } from '../../../services/regrasAgendamento';
 import { mensagemDoErro } from '../../../utils/erros';
 import { formatarPorcentagem, formatarTelefone } from '../../../utils/formatadores';
@@ -33,15 +34,25 @@ export default function Pendentes() {
 
   const { dados, carregando, erro, recarregar } = useCarregar(async () => {
     const [consultas, horarios] = await Promise.all([listarConsultas(), listarHorarios(idUnidade)]);
-    return { consultas, horarios };
+    // Cadastro (celular e recado) de cada paciente com consulta AGENDADA nesta UBS, buscado na mesma API das consultas.
+    // Assim o id do banco nunca cai num cidadão de exemplo do mock com o mesmo número.
+    const idsHorario = new Set(horarios.map((h) => h.idHorario));
+    const idsCidadao = [...new Set(consultas
+      .filter((c) => c.dsStatus === 'AGENDADA' && c.idHorario !== undefined && idsHorario.has(c.idHorario))
+      .map((c) => c.idCidadao)
+      .filter((id): id is number => id != null))];
+    // Um 404 num cadastro não derruba a tela: o cartão aparece sem contato.
+    const encontrados = await Promise.all(idsCidadao.map((id) => buscarCidadao(id).catch(() => null)));
+    const cidadaos = encontrados.filter((c): c is Cidadao => c !== null);
+    return { consultas, horarios, cidadaos };
   }, [idUnidade, estado.consultas]);
 
   if (carregando) return <Loading />;
   if (erro || !dados) return <MensagemErro mensagem={erro ?? 'Não foi possível carregar as pendentes.'} onRetry={recarregar} />;
 
   const hoje = agora();
-  // Contatos: no modo demonstração vêm do mock. TODO: aguardando a API Java (busca do cadastro de cada paciente).
-  const pendentes = listarPendentesConfirmacao(dados.consultas, dados.horarios, estado.cidadaos, idUnidade, hoje);
+  // Contatos: vêm de GET /cidadaos/{id} (no modo demonstração, buscarCidadao lê o mock).
+  const pendentes = listarPendentesConfirmacao(dados.consultas, dados.horarios, dados.cidadaos, idUnidade, hoje);
 
   /** Executa uma ação (confirmar ou cancelar) e atualiza a lista. */
   const executar = async (acao: () => Promise<unknown>) => {
@@ -67,7 +78,7 @@ export default function Pendentes() {
 
       <div className="grid gap-3 xl:grid-cols-2">
         {pendentes.map((c) => {
-          const cidadao = estado.cidadaos.find((x) => x.idCidadao === c.idCidadao);
+          const cidadao = dados.cidadaos.find((x) => x.idCidadao === c.idCidadao);
           const prazo = prazoConfirmacao(c);
           const semContato = cidadao ? !temContatoValido(cidadao) : true;
           const vencida = prazoVencidoSemContato(c, cidadao, hoje);
