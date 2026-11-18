@@ -73,8 +73,8 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
       },
       {
         metodo: "GET", rota: "/cidadaos/{id}",
-        descricao: "Busca o cadastro de quem está logado (ou de quem aceitou a vaga por telefone).",
-        telas: ["cidadao/ubs/:idUnidade", "cidadao/agendar", "cidadao/perfil", "cidadao/perfil/editar", "recepcao/lista-do-dia"],
+        descricao: "Busca o cadastro de quem está logado, de quem aceitou a vaga por telefone ou, nas Pendentes, o celular e o recado de cada paciente.",
+        telas: ["cidadao/ubs/:idUnidade", "cidadao/agendar", "cidadao/perfil", "cidadao/perfil/editar", "recepcao/pendentes", "recepcao/lista-do-dia"],
       },
       {
         metodo: "GET", rota: "/cidadaos?cns={nrCns}",
