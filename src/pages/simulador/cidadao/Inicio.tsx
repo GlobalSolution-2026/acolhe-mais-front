@@ -1,12 +1,14 @@
 /**
  * Página: Início (aba Cidadão → celular, /simulador/cidadao/inicio)
- * Primeira tela do app: a pessoa informa o CEP (o ViaCEP completa o endereço), pode digitar número
+ * Primeira tela do app: a pessoa pode informar o CEP (opcional; o ViaCEP completa o endereço), pode digitar número
  * e complemento e escolhe uma das 5 queixas para começar a orientação. A Emergência fica no botão
  * vermelho da barra inferior do celular, sempre visível.
  * Veio do protótipo: src/pages/cidadao/Inicio.tsx.
  * Endpoints: GET https://viacep.com.br/ws/{cep}/json/ (API externa).
  * Estados: buscando endereço, endereço encontrado, CEP não encontrado e falha do ViaCEP.
- * Regra: o endereço é só um complemento; a busca nunca bloqueia a orientação (pode ser urgência).
+ * Regra: o CEP é opcional e o endereço é só um complemento; nada disso bloqueia a orientação (pode ser urgência).
+ * Se a pessoa digitar o CEP, ele precisa ter 8 números. Sem CEP, o Resultado pede o CEP para indicar a unidade
+ * mais próxima (CampoCepOpcional).
  */
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -90,8 +92,9 @@ export default function Inicio() {
       navigate(`${BASE_CELULAR}/orientacao`);
     })();
 
+  // Regra: CEP opcional (a orientação nunca trava); se preenchido, vale a mesma validação de 8 números.
   const registroCep = register('cep', {
-    ...regrasCep,
+    pattern: regrasCep.pattern,
     onChange: (e: ChangeEvent<HTMLInputElement>) => {
       setValue('cep', mascararCep(e.target.value), { shouldValidate: isSubmitted });
     },
@@ -100,7 +103,7 @@ export default function Inicio() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <CampoFormulario id="cep" label="Seu CEP" placeholder="00000-000" numerico registro={registroCep} erro={errors.cep} />
+        <CampoFormulario id="cep" label="Seu CEP (opcional)" placeholder="00000-000" numerico registro={registroCep} erro={errors.cep} />
         {cepCompleto && (
           <p className="text-sm text-textoSuave" aria-live="polite">
             {!buscaAtual && 'Buscando endereço...'}
@@ -117,7 +120,9 @@ export default function Inicio() {
 
       <div>
         <h1 className="mb-1 text-2xl font-extrabold text-primaria">O que você está sentindo?</h1>
-        {!cepCompleto && <p className="text-base text-textoSuave">Preencha o CEP para escolher.</p>}
+        {!cepCompleto && (
+          <p className="text-base text-textoSuave">Sem o CEP, a orientação funciona igual, mas não indicamos a unidade mais próxima.</p>
+        )}
       </div>
 
       <div className="grid gap-3">
@@ -128,10 +133,7 @@ export default function Inicio() {
               key={q.codigo}
               type="button"
               onClick={() => escolher(q.codigo)}
-              aria-disabled={!cepCompleto}
-              className={`flex min-h-20 items-center gap-4 rounded-xl border border-borda bg-branco p-4 text-left text-lg font-bold shadow-leve transition-colors ${
-                cepCompleto ? 'cursor-pointer hover:border-primaria' : 'opacity-50'
-              }`}
+              className="flex min-h-20 cursor-pointer items-center gap-4 rounded-xl border border-borda bg-branco p-4 text-left text-lg font-bold shadow-leve transition-colors hover:border-primaria"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mentaSuave text-primaria">
                 <Icone size={26} aria-hidden />
