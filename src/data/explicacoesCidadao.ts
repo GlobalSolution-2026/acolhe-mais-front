@@ -29,10 +29,10 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
   inicio: {
     titulo: "Cidadão · Início",
     oQueFaz:
-      "A pessoa informa o CEP e escolhe o que está sentindo entre 5 queixas. O ViaCEP completa o endereço, que depois aparece no roteiro da ligação para o SAMU e ajuda a achar a UPA e as UBS mais próximas.",
+      "A pessoa pode informar o CEP (opcional) e escolhe o que está sentindo entre 5 queixas. O ViaCEP completa o endereço, que depois aparece no roteiro da ligação para o SAMU e ajuda a achar a UPA e as UBS mais próximas.",
     regras: [
       "A orientação e a Emergência não pedem login.",
-      "O CEP tem 8 números; o endereço do ViaCEP é só um complemento.",
+      "O CEP é opcional, para a orientação nunca travar (pode ser urgência). Se for digitado, precisa ter 8 números; o endereço do ViaCEP é só um complemento.",
       "Se o ViaCEP falhar ou não achar o CEP, a pessoa segue só com o CEP (a orientação nunca trava).",
       "Para emergência, o botão vermelho da barra leva direto ao SAMU 192, em qualquer tela.",
       "A legenda \"O que significam as cores?\" explica cada cor com número (1 = mais grave, 5 = menos grave), significado e destino.",
@@ -60,15 +60,17 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "O Modelo 2 só pode ELEVAR a cor (verde/azul → amarelo), nunca baixar. Quando eleva, a tela avisa.",
       "Se a API de IA falhar, a orientação segue com a cor das regras e mostra um aviso discreto (não pode travar).",
       "UPA e UBS indicadas pelo CEP (os 3 primeiros números indicam a região).",
+      "Sem CEP, a tela não indica a unidade “mais próxima” (seria um palpite): mostra a orientação e, depois, um campo para informar o CEP. No vermelho, o roteiro da ligação pede a rua e o bairro.",
       "O código da orientação vale só no dia, para mostrar na recepção da UBS.",
     ],
   },
   ubs: {
     titulo: "Cidadão · UBS próximas",
     oQueFaz:
-      "Lista as UBS em ordem de proximidade pelo CEP informado no Início. Cada UBS leva aos horários livres dela.",
+      "Lista as UBS em ordem de proximidade pelo CEP do Início (ou do cadastro, com login). Cada UBS leva aos horários livres dela.",
     regras: [
       "A ordem usa os 3 primeiros números do CEP (região): mesma região primeiro.",
+      "Sem nenhum CEP, a lista aparece sem ordem de distância e a tela pede o CEP para ordenar.",
       "A API devolve todas as unidades; o filtro UBS é feito no front.",
     ],
   },
