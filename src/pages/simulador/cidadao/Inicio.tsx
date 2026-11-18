@@ -20,6 +20,7 @@ import { queixas } from '../../../data/queixas';
 import { buscarEndereco, formatarEndereco } from '../../../services/cep';
 import { BASE_CELULAR } from '../../../services/navegacao';
 import type { CodigoQueixa, EnderecoCep } from '../../../types/orientacao';
+import { mascararCep } from '../../../utils/formatadores';
 import { regrasCep } from '../../../utils/validacoes';
 
 /** Campos do formulário do Início. */
@@ -44,12 +45,6 @@ const ICONES: Record<CodigoQueixa, IconType> = {
   CABECA: FiFrown,
   URINA: FiZap,
 };
-
-/** Formata o CEP enquanto a pessoa digita: "04010100" → "04010-100". */
-function mascararCep(valor: string): string {
-  const d = valor.replace(/\D/g, '').slice(0, 8);
-  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
-}
 
 /** Tela Início do celular: CEP, queixas e acesso à Emergência. */
 export default function Inicio() {

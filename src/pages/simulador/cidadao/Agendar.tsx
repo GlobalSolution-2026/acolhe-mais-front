@@ -2,6 +2,8 @@
  * Página: Agendar (aba Cidadão → celular, /simulador/cidadao/agendar?horario=&ubs=&oferta=)
  * Confirma o horário escolhido. A identificação aparece só para leitura (RF27) e a pessoa confere o celular
  * e o contato de recado. Exige login: sem login, vai para Entrar e volta para cá.
+ * Se o cadastro estiver sem CEP (conta criada antes de o CEP ser pedido no cadastro), mostra o campo CEP,
+ * obrigatório (já vem com o CEP do Início, se houver). Com CEP no cadastro, o campo não aparece.
  * Ao agendar, o serviço chama o Modelo 1 (risco de falta) e grava o risco na consulta.
  * Veio do protótipo: src/pages/cidadao/Agendar.tsx.
  * Endpoints: GET /cidadaos/{id}, GET /unidades/{id}, GET /unidades/{id}/horarios, PUT /cidadaos/{id},
@@ -104,6 +106,9 @@ export default function Agendar() {
       <FormularioCidadao
         valoresIniciais={cidadao}
         identificacaoSomenteLeitura
+        // Regra: a API Java exige CEP com 8 números no PUT /cidadaos/{id}; sem CEP no cadastro, a pessoa informa aqui.
+        pedirCep={!cidadao.nrCep}
+        nrCep={estado.orientacaoAtual?.nrCep ?? ''}
         aoEnviar={(d) => void aoEnviar(d)}
         textoBotao="Confirmar agendamento"
         textoEnviando="Agendando..."

@@ -1,10 +1,13 @@
 /**
  * Página: Criar conta (aba Cidadão → celular, /simulador/cidadao/criar-conta)
- * Cadastro com nome, Cartão SUS, celular, nascimento, sexo, contato de recado e senha.
+ * Cadastro com nome, Cartão SUS, celular, nascimento, sexo, contato de recado, CEP e senha.
+ * O CEP é obrigatório (a API Java valida 8 números) e já vem preenchido com o CEP do Início, se houver.
  * Depois de criar, a pessoa já fica logada e volta para onde estava (como no Entrar).
  * Veio do protótipo: src/pages/cidadao/CriarConta.tsx.
  * Endpoints: POST /cidadaos (API Java, com tpAcesso SENHA e senha).
  * Estados: enviando ("Criando conta...") e erro (400 dados inválidos, 409 já existe conta com este Cartão SUS).
+ * Regra: quem cria a conta sem passar pelo Início também informa o CEP aqui; sem ele, o PUT /cidadaos/{id}
+ * do Agendar seria recusado (400 "O CEP deve ter 8 números").
  * Regra RN21: quem foi cadastrado no balcão (sem senha) cria a conta com o mesmo Cartão SUS e mantém as consultas.
  */
 import { useState } from 'react';
@@ -50,6 +53,7 @@ export default function CriarConta() {
       <FormularioCidadao
         nrCep={estado.orientacaoAtual?.nrCep ?? ''}
         aoEnviar={(d, s) => void aoEnviar(d, s)}
+        pedirCep
         pedirSenha
         textoBotao="Criar conta"
         textoEnviando="Criando conta..."

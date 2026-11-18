@@ -24,6 +24,15 @@ export function formatarTelefone(telefone: string): string {
   return telefone;
 }
 
+/**
+ * Máscara do CEP enquanto a pessoa digita: "04010100" → "04010-100".
+ * Corta em 8 números. Usada no Início e no FormularioCidadao (Criar conta, Agendar, Editar perfil).
+ */
+export function mascararCep(valor: string): string {
+  const d = valor.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}
+
 /** CEP com hífen: "04010100" → "04010-100". */
 export function formatarCep(cep: string): string {
   const d = cep.replace(/\D/g, '');

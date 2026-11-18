@@ -1,6 +1,7 @@
+import type { ChangeEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { CidadaoEntrada } from '../../types';
-import { formatarCep, formatarCns, formatarData } from '../../utils/formatadores';
+import { formatarCep, formatarCns, formatarData, mascararCep } from '../../utils/formatadores';
 import {
   regrasCartaoSus, regrasCelular, regrasCep, regrasDataNascimento, regrasNome, regrasSenha, regrasSexo,
 } from '../../utils/validacoes';
@@ -32,7 +33,11 @@ interface FormularioCidadaoProps {
   aoEnviar: (dados: DadosCidadao, senha?: string) => void;
   /** Criar conta: pede senha e confirmação. */
   pedirSenha?: boolean;
-  /** Mostra o campo de CEP (Editar perfil). */
+  /**
+   * Mostra o campo de CEP, obrigatório (Editar perfil, Criar conta e Agendar quando o cadastro está sem CEP).
+   * Começa com valoresIniciais.nrCep ou, se estiver vazio, com o nrCep (ex.: o CEP do Início).
+   * Funciona junto com identificacaoSomenteLeitura: o CEP não faz parte da identificação do RF27.
+   */
   pedirCep?: boolean;
   /** Balcão: permite cadastro sem celular ("Não tem telefone"). No app, o celular é obrigatório. */
   celularOpcional?: boolean;
@@ -93,7 +98,7 @@ export default function FormularioCidadao({
   valoresIniciais = {}, nrCep = '', aoEnviar, pedirSenha, pedirCep, celularOpcional,
   identificacaoSomenteLeitura, textoBotao, enviando, textoEnviando = 'Aguarde...',
 }: FormularioCidadaoProps) {
-  const { register, handleSubmit, getValues, control, formState: { errors } } = useForm<CidadaoForm>({
+  const { register, handleSubmit, getValues, setValue, control, formState: { errors, isSubmitted } } = useForm<CidadaoForm>({
     defaultValues: {
       nmCidadao: valoresIniciais.nmCidadao ?? '',
       nrCns: valoresIniciais.nrCns ?? '',
@@ -113,6 +118,17 @@ export default function FormularioCidadao({
   const recado = useWatch({ control, name: 'nrContatoRecado' }) ?? '';
   const semTelefone = Boolean(celularOpcional) && marcouSemTelefone;
 
+  /**
+   * Registra o CEP com a máscara 00000-000 enquanto a pessoa digita (a mesma do Início).
+   * Só é chamado quando o campo aparece: registrado sem aparecer, o "obrigatório" travaria o envio.
+   */
+  const registrarCep = () => register('nrCep', {
+    ...regrasCep,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => {
+      setValue('nrCep', mascararCep(e.target.value), { shouldValidate: isSubmitted });
+    },
+  });
+
   /** Junta os campos (só com números em CNS, telefones e CEP) e entrega para a tela. */
   const enviar = handleSubmit((v) => {
     const base = identificacaoSomenteLeitura ? valoresIniciais : v;
@@ -126,6 +142,7 @@ export default function FormularioCidadao({
         nrCelular: semTelefone ? '' : v.nrCelular.replace(/\D/g, ''),
         nmContatoRecado: v.nmContatoRecado.trim(),
         nrContatoRecado: v.nrContatoRecado.replace(/\D/g, ''),
+        // Com o campo na tela, vale o que a pessoa digitou; sem o campo, o CEP do cadastro ou o recebido.
         nrCep: (pedirCep ? v.nrCep : valoresIniciais.nrCep ?? nrCep).replace(/\D/g, ''),
       },
       pedirSenha ? v.senha : undefined,
@@ -189,7 +206,7 @@ export default function FormularioCidadao({
         erro={errors.nrContatoRecado} registro={register('nrContatoRecado', { validate: telefoneOpcional })} />
 
       {pedirCep && (
-        <CampoFormulario id="nrCepCadastro" label="CEP" placeholder="00000-000" numerico erro={errors.nrCep} registro={register('nrCep', regrasCep)} />
+        <CampoFormulario id="nrCepCadastro" label="CEP" placeholder="00000-000" numerico erro={errors.nrCep} registro={registrarCep()} />
       )}
 
       {/* Regra: sem telefone e sem recado, a confirmação é presencial e a vaga não é liberada sozinha. */}
