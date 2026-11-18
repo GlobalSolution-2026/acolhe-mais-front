@@ -115,7 +115,7 @@ Pré-requisito: **Node.js 20.19** ou mais recente (exigência da Vite 8).
 git clone https://github.com/GlobalSolution-2026/acolhe-mais-front.git
 cd acolhe-mais-front
 npm install
-cp .env.example .env   # opcional: sem as URLs, roda em modo demonstração
+cp .env.example .env   # URLs das APIs publicadas (sem elas, roda em modo demonstração)
 npm run dev
 ```
 
