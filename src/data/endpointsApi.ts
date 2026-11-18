@@ -99,7 +99,7 @@ export const GRUPOS_ENDPOINTS: GrupoEndpoints[] = [
       },
       {
         metodo: "POST", rota: "/consultas",
-        descricao: "Agenda no horário escolhido, com o risco de falta; 409 se o horário acabou de ser ocupado.",
+        descricao: "Agenda no horário escolhido, com o risco de falta; 409 se o horário acabou de ser ocupado ou se a pessoa já tem consulta no dia (essa regra é conferida só no front).",
         telas: ["cidadao/agendar", "recepcao/agenda", "recepcao/balcao", "recepcao/lista-do-dia"],
       },
       {

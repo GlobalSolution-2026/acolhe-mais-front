@@ -5,7 +5,8 @@
  * Endpoints: GET /cidadaos?cns=, POST /cidadaos, PUT /cidadaos/{id}, GET /unidades/{id}/horarios e
  * POST /consultas (API Java) + POST /prever-falta (API Flask). Vincular orientação e lista do dia: demonstração.
  * Estados: "Buscando...", código de outra pessoa (bloqueado), cadastro novo ou existente, carregando
- * horários, sem horário livre (lista do dia), "Agendando..." e erro.
+ * horários, sem horário livre (lista do dia), "Agendando..." e erro (inclui o 409 de quem já tem consulta no dia:
+ * uma consulta ativa por pessoa por dia, conferida no agendarConsulta).
  */
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

@@ -5,7 +5,8 @@
  * Veio do protótipo: src/pages/recepcao/Agenda.tsx.
  * Endpoints: GET /unidades/{id}/horarios, GET /consultas, PUT /consultas/{id}/status,
  * GET /cidadaos?cns=, POST /cidadaos e POST /consultas (API Java) + POST /prever-falta (API Flask).
- * Estados: carregando, erro, vazio (nenhum horário no dia), "Aguarde..." nas ações e erro das ações.
+ * Estados: carregando, erro, vazio (nenhum horário no dia), "Aguarde..." nas ações e erro das ações
+ * (inclui o 409 de quem já tem consulta no dia: uma consulta ativa por pessoa por dia, conferida no agendarConsulta).
  */
 import { useState } from 'react';
 import { FiUserPlus } from 'react-icons/fi';

@@ -9,7 +9,9 @@
  * Endpoints: GET /cidadaos/{id}, GET /unidades/{id}, GET /unidades/{id}/horarios, PUT /cidadaos/{id},
  * POST /consultas (API Java) e POST /prever-falta (API Flask).
  * Estados: carregando, erro ao carregar, horário não encontrado (vazio), "Agendando..." com o botão
- * desabilitado e erro 409 (horário acabou de ser ocupado) com o atalho para escolher outro.
+ * desabilitado e erro 409 com o atalho para escolher outro horário: horário acabou de ser ocupado ou
+ * a pessoa já tem consulta no dia (cada um com a sua mensagem, vinda do serviço).
+ * Regra: uma consulta ativa por pessoa por dia, em qualquer UBS (conferida no agendarConsulta, só no front).
  */
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
@@ -86,7 +88,8 @@ export default function Agendar() {
       // A consulta vai junto na navegação (a tela Sucesso não precisa buscar de novo).
       navigate(`${BASE_CELULAR}/sucesso?consulta=${consulta.idConsulta}`, { state: { consulta }, replace: true });
     } catch (e) {
-      // 409: o horário acabou de ser ocupado por outra pessoa.
+      // 409: o horário acabou de ser ocupado ou a pessoa já tem consulta neste dia.
+      // A mensagem vem pronta do serviço; nos dois casos, a saída é escolher outro horário.
       setErro({ mensagem: mensagemDoErro(e), ocupado: e instanceof ErroApi && e.status === 409 });
       setEnviando(false);
     }
