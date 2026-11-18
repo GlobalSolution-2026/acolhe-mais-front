@@ -3,9 +3,10 @@
  * Mostra os horários livres de uma UBS agrupados por dia e o bloco "Procure a urgência se...".
  * Escolher um horário leva ao Agendar. Sem horário livre (ou por escolha), dá para entrar na lista do dia.
  * Veio do protótipo: src/pages/cidadao/HorariosUbs.tsx.
- * Endpoints: GET /unidades/{idUnidade} e GET /unidades/{idUnidade}/horarios (API Java).
+ * Endpoints: GET /unidades/{idUnidade}, GET /unidades/{idUnidade}/horarios e, com login, GET /consultas (API Java).
  * Estados: carregando (Render acorda devagar), erro (API fora/404), vazio (sem horário livre).
- * Regras: agenda só em dias úteis (sem feriados); a lista do dia é só para verde/azul e só em dia útil.
+ * Regras: agenda só em dias úteis (sem feriados); a lista do dia é só para verde/azul e só em dia útil;
+ * uma consulta ativa por dia: com login, o dia em que a pessoa já tem consulta mostra "Você já tem consulta neste dia".
  */
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FiList } from 'react-icons/fi';
@@ -21,10 +22,10 @@ import { useCarregar } from '../../../hooks/useCarregar';
 import { useEntrarNaListaDoDia } from '../../../hooks/useEntrarNaListaDoDia';
 import { chaveDia, isDiaUtil, rotuloDia } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
-import { buscarCidadao, buscarUnidade, listarHorarios } from '../../../services/api';
 import { BASE_CELULAR, queryRetorno } from '../../../services/navegacao';
-import { listaDoDiaAberta } from '../../../services/regrasAgendamento';
-import type { Horario, Unidade } from '../../../types';
+import { buscarCidadao, buscarUnidade, listarConsultas, listarHorarios } from '../../../services/api';
+import { consultaNoDia, listaDoDiaAberta } from '../../../services/regrasAgendamento';
+import type { Consulta, Horario, Unidade } from '../../../types';
 
 /** Tela de horários livres de uma UBS. */
 export default function HorariosUbs() {
@@ -34,13 +35,20 @@ export default function HorariosUbs() {
   const navigate = useNavigate();
   const entrarNaLista = useEntrarNaListaDoDia();
 
-  // Busca a UBS e os horários juntos; no modo demonstração, busca de novo quando a agenda do mock muda.
+  const idCidadao = estado.idCidadaoAtual;
+
+  // Busca a UBS, os horários e (com login) as consultas juntos; no modo demonstração, busca de novo quando o mock muda.
+  // As consultas vêm da API (listarConsultas), não do mock. Se falharem, os horários aparecem sem o aviso do dia.
   const { dados, carregando, erro, recarregar } = useCarregar(
-    async (): Promise<{ unidade: Unidade; horarios: Horario[] }> => {
-      const [unidade, horarios] = await Promise.all([buscarUnidade(idUnidade), listarHorarios(idUnidade)]);
-      return { unidade, horarios };
+    async (): Promise<{ unidade: Unidade; horarios: Horario[]; consultas: Consulta[] }> => {
+      const [unidade, horarios, consultas] = await Promise.all([
+        buscarUnidade(idUnidade),
+        listarHorarios(idUnidade),
+        idCidadao === null ? Promise.resolve([]) : listarConsultas().catch(() => []),
+      ]);
+      return { unidade, horarios, consultas };
     },
-    [idUnidade, estado.horarios],
+    [idUnidade, idCidadao, estado.horarios, estado.consultas],
   );
 
   const hoje = agora();
@@ -94,9 +102,14 @@ export default function HorariosUbs() {
       {!erro &&
         dias.map((dia) => {
           const doDia = livres.filter((h) => chaveDia(h.dtHorario) === dia);
+          // Regra: uma consulta ativa por dia (em qualquer UBS). O aviso antecipa o bloqueio do agendarConsulta.
+          const jaTemConsulta = !!consultaNoDia(dados?.consultas ?? [], idCidadao, dia);
           return (
             <section key={dia}>
-              <h2 className="mb-2 font-extrabold">{rotuloDia(doDia[0].dtHorario, true, hoje)}</h2>
+              <h2 className="mb-2 font-extrabold">
+                {rotuloDia(doDia[0].dtHorario, true, hoje)}
+                {jaTemConsulta && <span className="block text-sm font-semibold text-textoSuave">Você já tem consulta neste dia</span>}
+              </h2>
               <div className="grid grid-cols-3 gap-2">
                 {doDia.map((h) => (
                   <CardHorario
