@@ -2,8 +2,10 @@
  * Página: Lista do dia (aba Cidadão → celular, /simulador/cidadao/lista-do-dia)
  * Mostra a posição da pessoa na fila da lista do dia da UBS (quem foi sem horário e espera uma vaga liberada).
  * Veio do protótipo: src/pages/cidadao/ListaDoDiaCidadao.tsx.
- * Endpoints: nenhum. DEMONSTRAÇÃO: a lista do dia não existe na API Java.
+ * Endpoints: GET /consultas (API Java), só para saber se a pessoa já tem consulta hoje.
+ * DEMONSTRAÇÃO: a lista do dia não existe na API Java.
  * Estados: fora da lista (vazio), sem login (pede para entrar e receber a vaga no nome) e já com consulta hoje.
+ * Enquanto as consultas carregam ou se a busca falhar, o aviso "já tem consulta hoje" não aparece (a fila continua na tela).
  * Regras: quem ficou de ontem tem prioridade; depois verde antes de azul; depois ordem de chegada.
  */
 import { Link } from 'react-router-dom';
@@ -12,8 +14,10 @@ import EstadoVazio from '../../../components/EstadoVazio';
 import SeloDemonstracao from '../../../components/SeloDemonstracao';
 import { BOTAO_CONTORNO, BOTAO_PRIMARIO } from '../../../components/celular/classes';
 import { useSimulador } from '../../../context/useSimulador';
+import { useCarregar } from '../../../hooks/useCarregar';
 import { chaveDia, fmtHora } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
+import { listarConsultas } from '../../../services/api';
 import { BASE_CELULAR, queryRetorno } from '../../../services/navegacao';
 import { consultaNoDia, entradaDoCidadao, posicaoNaFila } from '../../../services/regrasAgendamento';
 
@@ -22,6 +26,15 @@ export default function ListaDoDia() {
   const { estado } = useSimulador();
   // Regra: a entrada é buscada pela conta logada (nunca a de outra pessoa que usou o app).
   const minha = entradaDoCidadao(estado.listaDoDia, estado.idCidadaoAtual);
+  const idCidadaoLista = minha?.idCidadao ?? null;
+
+  // "Já tem consulta hoje" usa as consultas da API (listarConsultas), e não o mock,
+  // para não pegar a consulta de uma pessoa de exemplo com o mesmo id de uma conta nova.
+  // Sem conta vinculada à entrada, não chama a API.
+  const { dados: consultas } = useCarregar(
+    async () => (idCidadaoLista === null ? [] : listarConsultas()),
+    [idCidadaoLista, estado.consultas],
+  );
 
   if (!minha) {
     return (
@@ -35,7 +48,7 @@ export default function ListaDoDia() {
   const fila = estado.listaDoDia.filter((e) => e.idUnidade === minha.idUnidade);
   const posicao = posicaoNaFila(fila, minha.idEntrada);
   const unidade = estado.unidades.find((u) => u.idUnidade === minha.idUnidade);
-  const consultaHoje = consultaNoDia(estado.consultas, minha.idCidadao, chaveDia(agora().toISOString()));
+  const consultaHoje = consultaNoDia(consultas ?? [], minha.idCidadao, chaveDia(agora().toISOString()));
   const query = queryRetorno({ destino: 'lista-do-dia' });
 
   return (
