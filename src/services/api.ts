@@ -21,11 +21,14 @@ import type {
 } from "../types";
 import type { Orientacao } from "../types/orientacao";
 import type { EstadoSimulador } from "../context/estadoSimulador";
+import { chaveDia } from "../lib/datas";
 import { agora } from "../lib/relogio";
 import { podeVincular } from "./balcao";
 import { ErroApi, falhar, requisitar, simular } from "./http";
 import { montarEntradaPrevisao, preverFaltaSemTravar } from "./ia";
-import { acoesPresenca, listaDoDiaAberta, MENSAGEM_LISTA_SO_DIA_UTIL, podeCancelar, segundosRestantesOferta } from "./regrasAgendamento";
+import {
+  acoesPresenca, consultaNoDia, listaDoDiaAberta, MENSAGEM_LISTA_SO_DIA_UTIL, podeCancelar, segundosRestantesOferta,
+} from "./regrasAgendamento";
 import { finalizarOferta, liberarConsulta } from "./simulacao";
 
 /** URL da API Java; vazia = modo demonstração. */
@@ -39,6 +42,9 @@ export const MENSAGEM_CONTA_EXISTENTE = "Já existe conta com este Cartão SUS. 
 
 /** Mensagem do 409 ao agendar (a mesma no mock e na API real, para a tela não depender do texto da API). */
 export const MENSAGEM_HORARIO_OCUPADO = "Este horário acabou de ser ocupado. Escolha outro.";
+
+/** Mensagem do 409 ao agendar quando a pessoa já tem consulta ativa no mesmo dia (a mesma no mock e com a API ligada). */
+export const MENSAGEM_CONSULTA_NO_DIA = "Você já tem consulta marcada neste dia. Escolha outro dia.";
 
 /* ---------- Ligação com o estado do mock (modo demonstração) ---------- */
 
@@ -350,13 +356,20 @@ export interface AgendamentoEntrada {
 /**
  * POST /consultas — API Java (+ POST /prever-falta na API Flask)
  * Agenda uma consulta. Usada no "Agendar" do celular e no balcão da Recepção.
+ * Também usada na Agenda da Recepção (quem chegou sem horário).
  * Antes de gravar, chama o Modelo 1 e manda vlProbFalta/dsRiscoFalta no corpo.
- * Erros esperados: 400, 404 (horário ou cidadão não existe), 409 (horário acabou de ser ocupado).
+ * Regra: uma consulta ativa (AGENDADA ou CONFIRMADA) por pessoa por dia, em qualquer UBS; LIBERADA, FALTA e
+ * REALIZADA não contam. Regra só no front (limitação desta versão): a API Java ainda não valida.
+ * Erros esperados: 400, 404 (horário ou cidadão não existe), 409 (horário acabou de ser ocupado ou
+ * a pessoa já tem consulta no dia: MENSAGEM_CONSULTA_NO_DIA).
  */
 export async function agendarConsulta(dados: AgendamentoEntrada): Promise<Consulta> {
   const { horario, cidadao } = dados;
   if (API_URL) {
     const consultas = await listarConsultas();
+    // Uma consulta por dia: confere antes da previsão e fora do try/catch abaixo,
+    // para a mensagem não ser trocada pela de horário ocupado.
+    conferirConsultaNoDia(consultas, cidadao.idCidadao, horario.dtHorario);
     const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, consultas, agora()));
     // idOrientacao vai null: a orientação ainda só existe no front (demonstração), com o número do mock.
     // O banco só tem as orientações 1 a 5 da carga de teste; mandar o número do mock quebraria a FK
@@ -392,7 +405,19 @@ function ofertaValida(e: EstadoSimulador, idOferta: number, idHorario: number, i
   return !!oferta && !!entrada && entrada.idCidadao === idCidadao && segundosRestantesOferta(oferta, agora()) > 0;
 }
 
-/** Agenda no mock, com as mesmas validações da API Java (404 e 409). */
+/**
+ * Regra: a pessoa não pode ter duas consultas ativas (AGENDADA ou CONFIRMADA) no mesmo dia, em nenhuma UBS.
+ * Usa a mesma consultaNoDia da lista do dia. Regra só no front: a API Java ainda não valida.
+ * @param consultas consultas da API (ou do mock, no modo demonstração)
+ * @param idCidadao quem está sendo agendado
+ * @param dtHorario data e hora do horário escolhido
+ * @throws ErroApi 409 com MENSAGEM_CONSULTA_NO_DIA quando já existe consulta ativa no dia
+ */
+function conferirConsultaNoDia(consultas: Consulta[], idCidadao: number, dtHorario: string): void {
+  if (consultaNoDia(consultas, idCidadao, chaveDia(dtHorario))) falhar({ status: 409, mensagem: MENSAGEM_CONSULTA_NO_DIA });
+}
+
+/** Agenda no mock, com as mesmas validações da API Java (404 e 409) e a regra de uma consulta por dia. */
 async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrientacao, idOferta }: AgendamentoEntrada): Promise<Consulta> {
   const s = obterStore();
   const e = s.obterEstado();
@@ -401,6 +426,8 @@ async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrienta
   if (horario.flOcupado) falhar({ status: 409, mensagem: MENSAGEM_HORARIO_OCUPADO });
   const cidadao = e.cidadaos.find((c) => c.idCidadao === informado.idCidadao);
   if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
+  // Uma consulta por dia: confere antes de chamar a previsão e de gravar.
+  conferirConsultaNoDia(e.consultas, cidadao.idCidadao, horario.dtHorario);
 
   const previsao = await preverFaltaSemTravar(montarEntradaPrevisao(horario, cidadao, e.consultas, agora()));
   const unidade = e.unidades.find((u) => u.idUnidade === horario.idUnidade);
@@ -423,6 +450,8 @@ async function agendarNoMock({ horario: escolhido, cidadao: informado, idOrienta
     if (atual.horarios.some((h) => h.idHorario === horario.idHorario && h.flOcupado)) {
       falhar({ status: 409, mensagem: MENSAGEM_HORARIO_OCUPADO });
     }
+    // E a consulta no dia também (outra aba pode ter agendado a mesma pessoa nesse meio-tempo).
+    conferirConsultaNoDia(atual.consultas, cidadao.idCidadao, horario.dtHorario);
     const oferta = atual.ofertas.find((o) => o.idOferta === idOferta && o.idHorario === horario.idHorario && o.status === "PENDENTE");
     const entrada = atual.listaDoDia.find((x) => x.idEntrada === oferta?.idEntrada);
     if (idOferta && !ofertaValida(atual, idOferta, horario.idHorario, cidadao.idCidadao)) {
