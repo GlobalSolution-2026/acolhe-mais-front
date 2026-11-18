@@ -47,7 +47,7 @@ export default function Entrar() {
     setErro(null);
     try {
       const cidadao = await entrar(nrCns, senha);
-      definirCidadaoAtual(cidadao.idCidadao, cidadao.nmCidadao);
+      definirCidadaoAtual(cidadao);
       if (retorno.destino === 'lista-do-dia' && retorno.ubs) entrarNaLista(retorno.ubs, cidadao.nmCidadao);
       navigate(destinoAposLogin(retorno), { replace: true });
     } catch (e) {

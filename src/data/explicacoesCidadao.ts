@@ -48,6 +48,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "\"Não sei\" vale como o pior caso (com poucas exceções).",
       "Só para maiores de 18 anos; dor de garganta com tosse ou coriza segue o fluxo de síndrome gripal.",
       "Com login e \"Para mim\", idade, sexo e doenças da ficha não são perguntados de novo (a tela avisa o que foi usado).",
+      "Idade e sexo vêm do cadastro que a API devolveu no login (guardado na sessão), nunca dos dados de exemplo.",
     ],
   },
   resultado: {
@@ -93,6 +94,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
       "A orientação e a Emergência não pedem login; agendar e ver consultas, sim.",
       "Mesma mensagem para Cartão SUS ou senha errados (não revela quem tem conta).",
       "Cadastro feito no balcão (sem senha) não entra: precisa criar a conta (RN21).",
+      "Depois de entrar, o app guarda o cadastro devolvido pela API e o atualiza a cada consulta ou alteração do cadastro.",
       "“Entrar com gov.br” fica desativado até a adesão do município.",
     ],
   },
@@ -175,6 +177,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     regras: [
       "Dado sensível (LGPD, art. 11): só salva com a autorização marcada, e a pessoa pode apagar.",
       "Prévia da integração com o Meu SUS: fica só no front (demonstração).",
+      "A ficha fica ligada ao Cartão SUS (único por pessoa), e não ao id: assim nunca aparece para outra conta.",
     ],
   },
   emergencia: {

@@ -3,7 +3,7 @@
  * só aceita componentes nos arquivos .tsx; o hook useSimulador() está em useSimulador.ts.
  */
 import { createContext } from "react";
-import type { Consulta, EntradaListaDoDia, Horario } from "../types";
+import type { Cidadao, Consulta, EntradaListaDoDia, Horario } from "../types";
 import type { ResumoSimulacao } from "../services/simulacao";
 import type { CodigoQueixa, LocalOrientacao, Resposta, ResultadoFinal } from "../types/orientacao";
 import type { EstadoSimulador } from "./estadoSimulador";
@@ -33,10 +33,10 @@ export interface SimuladorValor {
   /** Guarda o CEP informado depois do Início (no Resultado ou nas UBS próximas), quando a pessoa pulou o CEP. */
   informarCepOrientacao: (nrCep: string) => void;
   /**
-   * Guarda quem entrou no celular (login ou conta nova) e vincula a entrada da lista do dia feita sem login.
-   * nmCidadao vem do cadastro devolvido pela API (com a API ligada, o mock pode não ter esta pessoa).
+   * Guarda quem entrou no celular (login ou conta nova), com o cadastro que a API devolveu,
+   * e vincula a entrada da lista do dia feita sem login.
    */
-  definirCidadaoAtual: (idCidadao: number, nmCidadao?: string) => void;
+  definirCidadaoAtual: (cidadao: Cidadao) => void;
   /** Sai da conta no celular. */
   sair: () => void;
   /** Coloca o cidadão do celular na lista do dia da UBS (demonstração); nmCidadao vem do cadastro da API. */

@@ -4,7 +4,7 @@
  * Mostra o SAMU 192 com o botão de ligar e o roteiro da ligação; para quem está logado e tem ficha
  * de saúde, a ficha de emergência (prévia); e o Disque-Intoxicação.
  * Veio do protótipo: src/pages/cidadao/Emergencia.tsx + o roteiro do resultado vermelho.
- * Endpoints: nenhum (os dados vêm do que já está no app).
+ * Endpoints: nenhum (os dados vêm do que já está no app: o cadastro guardado no login e a ficha pelo Cartão SUS).
  * Estados: com ou sem CEP informado no Início; com ou sem login/ficha.
  */
 import { FiHeart, FiPhoneCall } from 'react-icons/fi';
@@ -16,8 +16,10 @@ import { useSimulador } from '../../../context/useSimulador';
 /** Tela Emergência do celular: SAMU 192, roteiro da ligação, ficha de emergência e Disque-Intoxicação. */
 export default function Emergencia() {
   const { estado } = useSimulador();
-  const cadastro = estado.cidadaos.find((c) => c.idCidadao === estado.idCidadaoAtual);
-  const ficha = cadastro ? estado.fichas.find((f) => f.idCidadao === cadastro.idCidadao) : undefined;
+  // Cadastro de quem entrou (veio da API no login), nunca o mock pelo id; ficha pelo Cartão SUS.
+  // Leitura imediata, sem esperar a rede: é a tela de emergência.
+  const cadastro = estado.cadastroAtual;
+  const ficha = cadastro ? estado.fichas.find((f) => f.nrCns === cadastro.nrCns) : undefined;
   const orientacao = estado.orientacaoAtual;
 
   return (

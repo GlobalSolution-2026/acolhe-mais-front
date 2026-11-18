@@ -244,13 +244,24 @@ export async function criarConta(dados: Omit<CidadaoEntrada, "tpAcesso" | "senha
 export async function buscarCidadao(idCidadao: number): Promise<Cidadao> {
   if (API_URL) {
     const resposta = await requisitar(`${API_URL}/cidadaos/${idCidadao}`, "JAVA");
-    return converterCidadao(await resposta.json());
+    return sincronizarCadastroAtual(converterCidadao(await resposta.json()));
   }
   return simular("GET", `/cidadaos/${idCidadao}`, "JAVA", () => {
     const cidadao = obterStore().obterEstado().cidadaos.find((c) => c.idCidadao === idCidadao);
     if (!cidadao) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
-    return cidadao;
+    return sincronizarCadastroAtual(cidadao);
   });
+}
+
+/**
+ * Se o cadastro recebido é de quem está logado, troca o cadastro guardado no Context (cadastroAtual).
+ * Assim, o que a API devolve num GET ou PUT do cadastro (ex.: celular novo, mudança feita no balcão)
+ * chega à orientação, à Emergência e à Ficha sem precisar entrar de novo.
+ * @returns o próprio cadastro, para encadear no return
+ */
+function sincronizarCadastroAtual(cidadao: Cidadao): Cidadao {
+  store?.atualizarEstado((e) => (e.idCidadaoAtual === cidadao.idCidadao ? { ...e, cadastroAtual: cidadao } : e));
+  return cidadao;
 }
 
 /**
@@ -293,7 +304,7 @@ export async function atualizarCidadao(idCidadao: number, dados: CidadaoAtualiza
   };
   if (API_URL) {
     const resposta = await requisitar(`${API_URL}/cidadaos/${idCidadao}`, "JAVA", { method: "PUT", body: JSON.stringify(corpo) });
-    return converterCidadao(await resposta.json());
+    return sincronizarCadastroAtual(converterCidadao(await resposta.json()));
   }
   return simular("PUT", `/cidadaos/${idCidadao}`, "JAVA", () => {
     const s = obterStore();
@@ -301,7 +312,7 @@ export async function atualizarCidadao(idCidadao: number, dados: CidadaoAtualiza
     if (!atual) falhar({ status: 404, mensagem: "Cidadão não encontrado" });
     const atualizado: Cidadao = { ...atual, ...corpo };
     s.atualizarEstado((e) => ({ ...e, cidadaos: e.cidadaos.map((c) => (c.idCidadao === idCidadao ? atualizado : c)) }));
-    return atualizado;
+    return sincronizarCadastroAtual(atualizado);
   });
 }
 
@@ -621,11 +632,16 @@ export async function aceitarOfertaPorTelefone(idOferta: number): Promise<Consul
   return agendarConsulta({ horario, cidadao, idOrientacao: entrada.idOrientacao, idOferta });
 }
 
-/** Ficha de saúde do cidadão (null se não tiver). Prévia – integração com o Meu SUS prevista. */
+/**
+ * Ficha de saúde do cidadão (null se não tiver). Prévia – integração com o Meu SUS prevista.
+ * A ficha é procurada pelo Cartão SUS, e não pelo id: com a API ligada, o id de uma conta nova
+ * pode ser o mesmo de uma pessoa de exemplo, e a ficha dela apareceria para outra pessoa.
+ * @param nrCns Cartão SUS de quem está logado (cadastro devolvido pela API)
+ */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function buscarFicha(idCidadao: number): Promise<FichaSaude | null> {
+export async function buscarFicha(nrCns: string): Promise<FichaSaude | null> {
   return simular("GET", "ficha de saúde (só no front)", "FRONT", () =>
-    obterStore().obterEstado().fichas.find((f) => f.idCidadao === idCidadao) ?? null);
+    obterStore().obterEstado().fichas.find((f) => f.nrCns === soNumeros(nrCns)) ?? null);
 }
 
 /**
@@ -635,16 +651,16 @@ export async function buscarFicha(idCidadao: number): Promise<FichaSaude | null>
 export async function salvarFicha(ficha: Omit<FichaSaude, "dtAtualizacao">): Promise<FichaSaude> {
   return simular("PUT", "ficha de saúde (só no front)", "FRONT", () => {
     if (!ficha.flConsentimento) falhar({ status: 400, mensagem: "Marque a autorização (LGPD) para salvar a ficha." });
-    const nova: FichaSaude = { ...ficha, dtAtualizacao: agora().toISOString() };
-    obterStore().atualizarEstado((e) => ({ ...e, fichas: [...e.fichas.filter((f) => f.idCidadao !== ficha.idCidadao), nova] }));
+    const nova: FichaSaude = { ...ficha, nrCns: soNumeros(ficha.nrCns), dtAtualizacao: agora().toISOString() };
+    obterStore().atualizarEstado((e) => ({ ...e, fichas: [...e.fichas.filter((f) => f.nrCns !== nova.nrCns), nova] }));
     return nova;
   });
 }
 
 /** Apaga a ficha de saúde (direito de exclusão da LGPD). */
 // DEMONSTRAÇÃO: não existe na API Java
-export async function apagarFicha(idCidadao: number): Promise<void> {
+export async function apagarFicha(nrCns: string): Promise<void> {
   return simular("DELETE", "ficha de saúde (só no front)", "FRONT", () => {
-    obterStore().atualizarEstado((e) => ({ ...e, fichas: e.fichas.filter((f) => f.idCidadao !== idCidadao) }));
+    obterStore().atualizarEstado((e) => ({ ...e, fichas: e.fichas.filter((f) => f.nrCns !== soNumeros(nrCns)) }));
   });
 }

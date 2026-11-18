@@ -270,7 +270,7 @@ function Ubs({ atual, res }: { atual: OrientacaoEmAndamento; res: ResultadoFinal
 /** Tela de resultado: conclui a orientação (regras + IA + salvar) e mostra o destino. */
 export default function Resultado() {
   const { estado, definirResultado } = useSimulador();
-  const { orientacaoAtual: atual, cidadaos, idCidadaoAtual, fichas } = estado;
+  const { orientacaoAtual: atual, cadastroAtual, idCidadaoAtual, fichas } = estado;
   const [erro, setErro] = useState<string | null>(null);
   // Muda a cada "Tentar novamente" para o efeito concluir de novo.
   const [tentativa, setTentativa] = useState(0);
@@ -279,8 +279,8 @@ export default function Resultado() {
 
   // Mesmas respostas efetivas da tela de Orientação (digitadas + cadastro/ficha).
   const respostas = useMemo(
-    () => respostasEfetivas({ orientacaoAtual: atual, cidadaos, idCidadaoAtual, fichas }, agora())?.respostas,
-    [atual, cidadaos, idCidadaoAtual, fichas],
+    () => respostasEfetivas({ orientacaoAtual: atual, cadastroAtual, fichas }, agora())?.respostas,
+    [atual, cadastroAtual, fichas],
   );
 
   // Conclui a orientação uma vez (regras + verificação de IA + salvar), se ainda não tem resultado.

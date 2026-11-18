@@ -74,8 +74,8 @@ export function respostasDaFicha(
 /** Partes do estado usadas na orientação. */
 export interface FontesOrientacao {
   orientacaoAtual: OrientacaoEmAndamento | null;
-  cidadaos: Cidadao[];
-  idCidadaoAtual: number | null;
+  /** Cadastro de quem está logado (veio da API no login); null = sem login. */
+  cadastroAtual: Cidadao | null;
   fichas: FichaSaude[];
 }
 
@@ -86,8 +86,9 @@ export interface FontesOrientacao {
 export function respostasEfetivas(fontes: FontesOrientacao, hoje: Date): DadosDaFicha | null {
   const atual = fontes.orientacaoAtual;
   if (!atual) return null;
-  const cidadao = fontes.cidadaos.find((c) => c.idCidadao === fontes.idCidadaoAtual) ?? null;
-  const ficha = cidadao ? fontes.fichas.find((f) => f.idCidadao === cidadao.idCidadao) ?? null : null;
+  // Regra: idade e sexo vêm do cadastro de quem entrou (API), nunca do mock pelo id, e a ficha pelo Cartão SUS.
+  const cidadao = fontes.cadastroAtual;
+  const ficha = cidadao ? fontes.fichas.find((f) => f.nrCns === cidadao.nrCns) ?? null : null;
   const daFicha = respostasDaFicha(atual.codigoQueixa, atual.respostas, cidadao, ficha, hoje);
   return { respostas: { ...daFicha.respostas, ...atual.respostas }, usados: daFicha.usados };
 }
