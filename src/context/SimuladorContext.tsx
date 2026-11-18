@@ -98,6 +98,12 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     [alterarOrientacao],
   );
 
+  /** O CEP é opcional no Início; quem pulou pode informar depois e passa a ver a unidade mais próxima. */
+  const informarCepOrientacao = useCallback(
+    (nrCep: string) => alterarOrientacao((o) => ({ ...o, nrCep })),
+    [alterarOrientacao],
+  );
+
   const definirCidadaoAtual = useCallback(
     (idCidadao: number, nmCidadao?: string) =>
       atualizarEstado((e) => ({
@@ -189,12 +195,12 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
   const valor = useMemo(
     () => ({
       estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
-      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
+      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado, informarCepOrientacao,
       definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta,
       selecionarUnidadeRecepcao, oferecerVaga, simularPassagemPrazo, vencerPrazoOfertas, encerrarDia,
     }),
     [estado, obterEstado, atualizarEstado, reiniciarDemonstracao, versaoFeriados,
-      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado,
+      iniciarOrientacao, responder, voltarPergunta, trocarQueixa, definirResultado, informarCepOrientacao,
       definirCidadaoAtual, sair, entrarNaListaDoDia, responderOferta,
       selecionarUnidadeRecepcao, oferecerVaga, simularPassagemPrazo, vencerPrazoOfertas, encerrarDia],
   );

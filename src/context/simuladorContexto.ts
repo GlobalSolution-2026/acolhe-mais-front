@@ -30,6 +30,8 @@ export interface SimuladorValor {
   trocarQueixa: (codigoQueixa: CodigoQueixa) => void;
   /** Guarda o resultado final (cor, destino e código da orientação). */
   definirResultado: (resultado: ResultadoFinal) => void;
+  /** Guarda o CEP informado depois do Início (no Resultado ou nas UBS próximas), quando a pessoa pulou o CEP. */
+  informarCepOrientacao: (nrCep: string) => void;
   /**
    * Guarda quem entrou no celular (login ou conta nova) e vincula a entrada da lista do dia feita sem login.
    * nmCidadao vem do cadastro devolvido pela API (com a API ligada, o mock pode não ter esta pessoa).

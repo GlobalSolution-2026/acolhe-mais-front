@@ -9,6 +9,8 @@
  * e a orientação salva (só no front, demonstração).
  * Estados: concluindo (carregando), erro ao salvar (tentar de novo), sem orientação (vazio),
  * carregando/erro/vazio na busca da UPA e da UBS, e aviso discreto quando a verificação de IA falha.
+ * Regra: o CEP é opcional no Início. Sem ele, o amarelo e o código para a UBS não indicam a unidade "mais próxima"
+ * (seria um palpite); em vez disso, mostram o campo de CEP (CampoCepOpcional) depois das orientações.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -18,6 +20,7 @@ import LegendaCores from '../../../components/LegendaCores';
 import Loading from '../../../components/Loading';
 import MensagemErro from '../../../components/MensagemErro';
 import SeloGravidade from '../../../components/SeloGravidade';
+import CampoCepOpcional from '../../../components/celular/CampoCepOpcional';
 import RoteiroLigacao from '../../../components/celular/RoteiroLigacao';
 import { BOTAO_CONTORNO, BOTAO_EMERGENCIA, BOTAO_PRIMARIO } from '../../../components/celular/classes';
 import { useSimulador } from '../../../context/useSimulador';
@@ -136,10 +139,30 @@ function Laranja({ res }: { res: ResultadoFinal }) {
   );
 }
 
+/**
+ * UPA mais próxima do CEP (só é montada quando há CEP).
+ * @param nrCep CEP do Início ou o informado no Resultado
+ */
+function UpaIndicada({ nrCep }: { nrCep: string }) {
+  const escolher = useCallback((upas: Unidade[]) => upaMaisProxima(upas, nrCep), [nrCep]);
+  const { unidade: upa, carregando, erro, tentarDeNovo } = useUnidadeIndicada('UPA', escolher);
+  return (
+    <>
+      {carregando && <Loading />}
+      {erro && <MensagemErro mensagem={erro} onRetry={tentarDeNovo} />}
+      {!carregando && !erro && !upa && <EstadoVazio mensagem="Nenhuma UPA encontrada." />}
+      {!carregando && !erro && upa && (
+        <section className="rounded-xl border border-borda bg-branco p-4 shadow-leve">
+          <DadosUnidade unidade={upa} />
+        </section>
+      )}
+    </>
+  );
+}
+
 /** Amarelo: procurar a UPA mais próxima do CEP. Mostra quando a cor foi elevada pela IA. */
 function Amarelo({ atual, res }: { atual: OrientacaoEmAndamento; res: ResultadoFinal }) {
-  const escolher = useCallback((upas: Unidade[]) => upaMaisProxima(upas, atual.nrCep), [atual.nrCep]);
-  const { unidade: upa, carregando, erro, tentarDeNovo } = useUnidadeIndicada('UPA', escolher);
+  const { informarCepOrientacao } = useSimulador();
 
   return (
     <>
@@ -152,24 +175,18 @@ function Amarelo({ atual, res }: { atual: OrientacaoEmAndamento; res: ResultadoF
           Por segurança, a cor subiu para amarelo: procure a UPA.
         </p>
       )}
-      {carregando && <Loading />}
-      {erro && <MensagemErro mensagem={erro} onRetry={tentarDeNovo} />}
-      {!carregando && !erro && !upa && <EstadoVazio mensagem="Nenhuma UPA encontrada." />}
-      {!carregando && !erro && upa && (
-        <section className="rounded-xl border border-borda bg-branco p-4 shadow-leve">
-          <DadosUnidade unidade={upa} />
-        </section>
-      )}
+      {/* Sem CEP: a orientação aparece igual e o campo de CEP vem depois (a UPA "mais próxima" seria um palpite). */}
+      {atual.nrCep ? <UpaIndicada nrCep={atual.nrCep} /> : <p className="font-semibold">Procure a UPA mais perto de você.</p>}
       <ListaSinais sinais={res.sinaisMarcados} />
       <p className="font-bold">Se piorar, ligue 192.</p>
+      {!atual.nrCep && <CampoCepOpcional mensagem="Informe seu CEP para ver a UPA mais próxima." onInformar={informarCepOrientacao} />}
     </>
   );
 }
 
 /** Código para apresentar na recepção (vale só hoje; funciona sem login) + UBS indicada pelo CEP. */
 function CodigoParaUbs({ atual, idOrientacao }: { atual: OrientacaoEmAndamento; idOrientacao: number }) {
-  const escolher = useCallback((ubs: Unidade[]) => ordenarUbsPorCep(ubs, atual.nrCep)[0] ?? null, [atual.nrCep]);
-  const { unidade: ubs, carregando, erro, tentarDeNovo } = useUnidadeIndicada('UBS', escolher);
+  const { informarCepOrientacao } = useSimulador();
 
   return (
     <section className="flex flex-col gap-3 rounded-xl border-2 border-primaria bg-branco p-4" aria-live="polite">
@@ -178,6 +195,25 @@ function CodigoParaUbs({ atual, idOrientacao }: { atual: OrientacaoEmAndamento; 
         <FiHash aria-hidden /> <span aria-label={`Código ${idOrientacao}`}>{idOrientacao}</span>
       </p>
       <p className="text-base text-textoSuave">O código vale só para hoje. Leve o Cartão SUS.</p>
+      {/* Sem CEP: não indica UBS (seria um palpite) e pede o CEP. */}
+      {atual.nrCep ? (
+        <UbsIndicada nrCep={atual.nrCep} />
+      ) : (
+        <CampoCepOpcional mensagem="Informe seu CEP para ver a UBS indicada." onInformar={informarCepOrientacao} />
+      )}
+    </section>
+  );
+}
+
+/**
+ * UBS indicada pelo CEP (só é montada quando há CEP).
+ * @param nrCep CEP do Início ou o informado no Resultado
+ */
+function UbsIndicada({ nrCep }: { nrCep: string }) {
+  const escolher = useCallback((ubs: Unidade[]) => ordenarUbsPorCep(ubs, nrCep)[0] ?? null, [nrCep]);
+  const { unidade: ubs, carregando, erro, tentarDeNovo } = useUnidadeIndicada('UBS', escolher);
+  return (
+    <>
       {carregando && <Loading />}
       {erro && <MensagemErro mensagem={erro} onRetry={tentarDeNovo} />}
       {!carregando && !erro && !ubs && <EstadoVazio mensagem="Nenhuma UBS encontrada." />}
@@ -187,7 +223,7 @@ function CodigoParaUbs({ atual, idOrientacao }: { atual: OrientacaoEmAndamento; 
           <DadosUnidade unidade={ubs} />
         </div>
       )}
-    </section>
+    </>
   );
 }
 
