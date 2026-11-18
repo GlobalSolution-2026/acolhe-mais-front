@@ -8,13 +8,17 @@
  * e sem CEP do Início).
  * Estados: carregando, erro (API fora do ar) e vazio (nenhuma UBS). Se o cadastro não carregar, a lista aparece
  * mesmo assim, sem ordenar pelo CEP.
+ * Sem nenhum CEP (o do Início é opcional e pode não haver login), a lista aparece sem ordem de distância e
+ * a tela mostra o campo de CEP (CampoCepOpcional) para ordenar.
  */
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CardUnidade from '../../../components/CardUnidade';
 import EstadoVazio from '../../../components/EstadoVazio';
 import Loading from '../../../components/Loading';
 import MensagemErro from '../../../components/MensagemErro';
 import SeloGravidade from '../../../components/SeloGravidade';
+import CampoCepOpcional from '../../../components/celular/CampoCepOpcional';
 import { useSimulador } from '../../../context/useSimulador';
 import { useCarregar } from '../../../hooks/useCarregar';
 import { buscarCidadao, listarUnidades } from '../../../services/api';
@@ -23,7 +27,7 @@ import { ordenarUbsPorCep } from '../../../services/orientacao';
 
 /** Tela UBS próximas. */
 export default function Ubs() {
-  const { estado } = useSimulador();
+  const { estado, informarCepOrientacao } = useSimulador();
   const navigate = useNavigate();
   const idCidadao = estado.idCidadaoAtual;
   const cepInicio = estado.orientacaoAtual?.nrCep || '';
@@ -39,7 +43,16 @@ export default function Ubs() {
     return { ubs, cepCadastro: cadastro?.nrCep ?? '' };
   }, [cepInicio, idCidadao]);
 
-  const cep = cepInicio || dados?.cepCadastro || '';
+  // CEP digitado nesta tela (quando não há CEP do Início nem do cadastro).
+  const [cepDigitado, setCepDigitado] = useState('');
+  const cep = cepInicio || dados?.cepCadastro || cepDigitado;
+  const semCep = !carregando && !erro && !cep;
+
+  /** Guarda o CEP digitado aqui e também na orientação em andamento (se houver), para as outras telas. */
+  const informarCep = (nrCep: string) => {
+    setCepDigitado(nrCep);
+    informarCepOrientacao(nrCep);
+  };
   const ordenadas = dados ? ordenarUbsPorCep(dados.ubs, cep) : [];
   const resultado = estado.orientacaoAtual?.resultado ?? null;
 
@@ -52,6 +65,7 @@ export default function Ubs() {
           <SeloGravidade cor={resultado.dsCor} tamanho="pequeno" />
         </div>
       )}
+      {semCep && <CampoCepOpcional mensagem="Informe seu CEP para ver as UBS mais próximas primeiro." onInformar={informarCep} textoBotao="Ordenar pela distância" />}
       {carregando && <Loading />}
       {erro && <MensagemErro mensagem={erro} onRetry={recarregar} />}
       {!carregando && !erro && ordenadas.length === 0 && <EstadoVazio mensagem="Nenhuma UBS encontrada." />}
