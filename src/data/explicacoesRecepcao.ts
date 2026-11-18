@@ -16,6 +16,7 @@ export const EXPLICACOES_RECEPCAO: Record<string, ExplicacaoTela> = {
       "Risco ALTO a partir da pontuação de risco de 0,60.",
       "Selo \"Fez orientação hoje\": lembra a equipe de que a pessoa procurou ajuda pelo app.",
       "Quem chega sem celular é cadastrado no balcão (sem senha) e pode criar a conta depois (RN21).",
+      "Uma consulta ativa por pessoa por dia, em qualquer UBS (regra só no front: a API Java ainda não valida).",
     ],
   },
   balcao: {
@@ -26,6 +27,7 @@ export const EXPLICACOES_RECEPCAO: Record<string, ExplicacaoTela> = {
       "O código vale só no dia da orientação e só uma vez (código já usado ou de outra pessoa é bloqueado).",
       "Busca o cidadão pelo Cartão SUS; sem cadastro, cadastra sem senha.",
       "Sem horário livre, a pessoa entra na lista do dia (só em dia útil).",
+      "Uma consulta ativa por pessoa por dia, em qualquer UBS (regra só no front: a API Java ainda não valida).",
       "A orientação no balcão usa as mesmas regras e a mesma verificação de IA do app (só eleva).",
     ],
   },

@@ -79,6 +79,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     regras: [
       "Agenda só em dias úteis, sem feriados nacionais, e só horários que ainda não passaram.",
       "Lista do dia: só para verde/azul e só em dia útil (demonstração: não existe na API Java).",
+      "Uma consulta ativa por dia: com login, o dia em que a pessoa já tem consulta mostra o aviso “Você já tem consulta neste dia”.",
       "Mostra “Procure a urgência se...” com os sinais de piora da queixa.",
     ],
   },
@@ -109,6 +110,7 @@ export const EXPLICACOES_TELAS: Record<string, ExplicacaoTela> = {
     regras: [
       "RF27: nome, Cartão SUS, nascimento e sexo só para leitura (corrigir na recepção).",
       "409: se outra pessoa pegou o horário, a tela avisa e oferece escolher outro.",
+      "Uma consulta ativa (agendada ou confirmada) por pessoa por dia, em qualquer UBS; canceladas, faltas e realizadas não contam. Regra só no front: a API Java ainda não valida.",
       "Risco ALTO a partir de 0,60. Se a API de IA falhar, a consulta fica com risco ALTO (o lado mais cuidadoso).",
     ],
   },
