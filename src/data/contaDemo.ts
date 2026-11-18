@@ -29,7 +29,7 @@ export const DOENCAS_BASE: { cd: CodigoDoencaBase; nm: string }[] = [
  */
 export function fichasIniciais(agora: Date): FichaSaude[] {
   return [{
-    idCidadao: CONTA_DEMO.idCidadao,
+    nrCns: CONTA_DEMO.nrCns,
     dsDoencasBase: ["HIPERTENSAO", "DIABETES"],
     dsOutraDoenca: "",
     medicamentos: [{ nmMedicamento: "Losartana", dsDose: "50 mg, 1 vez ao dia" }, { nmMedicamento: "Metformina", dsDose: "850 mg, 2 vezes ao dia" }],

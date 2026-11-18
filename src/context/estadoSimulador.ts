@@ -29,16 +29,22 @@ export interface EstadoSimulador {
   ofertas: OfertaVaga[];
   /** Cidadão logado no celular (null = sem login). */
   idCidadaoAtual: number | null;
+  /**
+   * Cadastro de quem está logado, como a API devolveu no login (e atualizado a cada GET/PUT do cadastro).
+   * As telas leem idade, sexo, nome e contatos daqui, nunca de "cidadaos" pelo id: com a API ligada,
+   * o id de uma conta nova pode ser o mesmo de uma pessoa de exemplo do mock.
+   */
+  cadastroAtual: Cidadao | null;
   /** Senhas do modo demonstração (login por CNS + senha). */
   credenciais: CredencialCidadao[];
-  /** Fichas de saúde (prévia, sempre demonstração). */
+  /** Fichas de saúde (prévia, sempre demonstração), ligadas ao Cartão SUS de cada pessoa. */
   fichas: FichaSaude[];
 }
 
 const CHAVE_STORAGE = "acolhe-plus:simulador";
 
 /** Sobe quando o formato do estado muda: o estado salvo antigo é descartado. */
-const VERSAO_SEMENTE = 3; // 2: nomes da API Java (id*), CEP e telefone só com números · 3: cidadãos 1 a 8 iguais à carga do banco e dtHorario na oferta
+const VERSAO_SEMENTE = 4; // 2: nomes da API Java (id*), CEP e telefone só com números · 3: cidadãos 1 a 8 iguais à carga do banco e dtHorario na oferta · 4: cadastroAtual e ficha pelo Cartão SUS
 
 /**
  * Monta o estado inicial da demonstração a partir dos dados de exemplo (pasta data/).
@@ -60,6 +66,7 @@ export function estadoInicial(): EstadoSimulador {
     listaDoDia: semente.listaDoDia,
     ofertas: [],
     idCidadaoAtual: null,
+    cadastroAtual: null,
     credenciais: credenciaisIniciais,
     fichas: fichasIniciais(hoje),
   };

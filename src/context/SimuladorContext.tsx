@@ -9,7 +9,7 @@ import { carregarFeriados } from "../lib/feriados";
 import { agora, carregarPreferenciaSimulacao } from "../lib/relogio";
 import { entradaDoCidadao, listaDoDiaAberta, vincularEntradaSemLogin } from "../services/regrasAgendamento";
 import { finalizarOferta, oferecerHorario, simularPrazo, vencerOfertas } from "../services/simulacao";
-import type { Consulta, EntradaListaDoDia, Horario } from "../types";
+import type { Cidadao, Consulta, EntradaListaDoDia, Horario } from "../types";
 import { iniciarQuestionario, responderNoQuestionario, trocarQueixaNoQuestionario, voltarNoQuestionario } from "../services/regrasOrientacao";
 import type { CodigoQueixa, LocalOrientacao, OrientacaoEmAndamento, Resposta, ResultadoFinal } from "../types/orientacao";
 import { estadoInicial, lerEstadoSalvo, salvarEstado, type EstadoSimulador } from "./estadoSimulador";
@@ -104,19 +104,21 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
     [alterarOrientacao],
   );
 
+  /** Login ou conta nova: guarda o id e o cadastro devolvido pela API (a fonte dos dados de quem está logado). */
   const definirCidadaoAtual = useCallback(
-    (idCidadao: number, nmCidadao?: string) =>
+    (cidadao: Cidadao) =>
       atualizarEstado((e) => ({
         ...e,
-        idCidadaoAtual: idCidadao,
+        idCidadaoAtual: cidadao.idCidadao,
+        cadastroAtual: cidadao,
         // Regra: a entrada na lista do dia feita sem login passa a ser desta conta.
-        // O nome vem de quem chamou (cadastro da API); o mock é só o plano B.
-        listaDoDia: vincularEntradaSemLogin(e.listaDoDia, idCidadao, nmCidadao ?? e.cidadaos.find((c) => c.idCidadao === idCidadao)?.nmCidadao),
+        listaDoDia: vincularEntradaSemLogin(e.listaDoDia, cidadao.idCidadao, cidadao.nmCidadao),
       })),
     [atualizarEstado],
   );
 
-  const sair = useCallback(() => atualizarEstado((e) => ({ ...e, idCidadaoAtual: null })), [atualizarEstado]);
+  /** Sair limpa o id e o cadastro guardado. */
+  const sair = useCallback(() => atualizarEstado((e) => ({ ...e, idCidadaoAtual: null, cadastroAtual: null })), [atualizarEstado]);
 
   /** Regras: a lista do dia só abre em dia útil e a mesma pessoa não entra duas vezes. */
   const entrarNaListaDoDia = useCallback(
@@ -128,8 +130,8 @@ export function SimuladorProvider({ children }: { children: ReactNode }) {
           idUnidade,
           idCidadao: e.idCidadaoAtual,
           idOrientacao,
-          // Nome do cadastro da API quando vier; senão, do mock (modo demonstração).
-          nmCidadao: nmCidadao ?? e.cidadaos.find((c) => c.idCidadao === e.idCidadaoAtual)?.nmCidadao ?? "Você",
+          // Nome do cadastro de quem está logado (veio da API no login); sem login, "Você".
+          nmCidadao: nmCidadao ?? e.cadastroAtual?.nmCidadao ?? "Você",
           dsCor,
           dtEntrada: agora().toISOString(),
           flPrioridade: false,

@@ -159,7 +159,8 @@ export interface MedicamentoContinuo {
 
 /** Ficha de saúde opcional do cidadão (dado sensível — LGPD, art. 11). Prévia: sempre demonstração. */
 export interface FichaSaude {
-  idCidadao: number;
+  /** Cartão SUS de quem é a ficha (único por pessoa; o id do mock pode coincidir com o de uma conta da API). */
+  nrCns: string;
   dsDoencasBase: CodigoDoencaBase[];
   dsOutraDoenca: string;
   medicamentos: MedicamentoContinuo[];

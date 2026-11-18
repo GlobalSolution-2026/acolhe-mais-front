@@ -5,6 +5,8 @@
  * Veio do protótipo: src/pages/cidadao/FichaSaude.tsx.
  * Endpoints: nenhum na API. DEMONSTRAÇÃO: não existe na API Java (/cidadaos/{id}/ficha é prévia).
  * Estados: sem login, carregando, erro ao salvar, "Salvando..." e confirmação antes de apagar.
+ * A ficha fica ligada ao Cartão SUS do cadastro de quem entrou (guardado no login), e não ao id:
+ * com a API ligada, o id de uma conta nova pode ser o de uma pessoa de exemplo.
  * Regra (LGPD, art. 11, dado sensível): só salva com a autorização marcada; a pessoa pode apagar a ficha.
  */
 import { useState } from 'react';
@@ -23,7 +25,7 @@ import { useCarregar } from '../../../hooks/useCarregar';
 import { fmtDiaHora } from '../../../lib/datas';
 import { apagarFicha, buscarFicha, salvarFicha } from '../../../services/api';
 import { BASE_CELULAR } from '../../../services/navegacao';
-import type { CodigoDoencaBase, FichaSaude, MedicamentoContinuo, TipoSanguineo } from '../../../types';
+import type { Cidadao, CodigoDoencaBase, FichaSaude, MedicamentoContinuo, TipoSanguineo } from '../../../types';
 import { mensagemDoErro } from '../../../utils/erros';
 import { formatarTelefone } from '../../../utils/formatadores';
 
@@ -43,10 +45,8 @@ const BOTAO_SALVAR =
   'flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-primaria px-5 font-bold text-branco shadow-leve hover:bg-primariaEscura disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Formulário da ficha (aparece depois de carregar a ficha atual). */
-function FormularioFicha({ idCidadao, ficha }: { idCidadao: number; ficha: FichaSaude | null }) {
-  const { estado } = useSimulador();
+function FormularioFicha({ cadastro, ficha }: { cadastro: Cidadao; ficha: FichaSaude | null }) {
   const navigate = useNavigate();
-  const cadastro = estado.cidadaos.find((c) => c.idCidadao === idCidadao);
   const [erro, setErro] = useState<string | null>(null);
   const [apagando, setApagando] = useState(false);
   const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FichaForm>({
@@ -68,7 +68,7 @@ function FormularioFicha({ idCidadao, ficha }: { idCidadao: number; ficha: Ficha
     setErro(null);
     try {
       await salvarFicha({
-        idCidadao,
+        nrCns: cadastro.nrCns,
         dsDoencasBase: v.dsDoencasBase || [],
         dsOutraDoenca: outra ? v.dsOutraDoenca.trim() : '',
         medicamentos: v.medicamentos
@@ -86,7 +86,7 @@ function FormularioFicha({ idCidadao, ficha }: { idCidadao: number; ficha: Ficha
 
   /** Apaga a ficha (direito de exclusão da LGPD) e volta para o Perfil. */
   const apagar = async () => {
-    await apagarFicha(idCidadao);
+    await apagarFicha(cadastro.nrCns);
     navigate(`${BASE_CELULAR}/perfil`);
   };
 
@@ -183,14 +183,15 @@ function FormularioFicha({ idCidadao, ficha }: { idCidadao: number; ficha: Ficha
 /** Tela Ficha de saúde: pede login e carrega a ficha atual antes de mostrar o formulário. */
 export default function FichaSaudePagina() {
   const { estado } = useSimulador();
-  const idCidadao = estado.idCidadaoAtual;
+  // Cadastro de quem entrou (veio da API no login e é atualizado a cada GET/PUT do cadastro).
+  const cadastro = estado.cadastroAtual;
   const { dados, carregando, erro, recarregar } = useCarregar(
-    async () => (idCidadao === null ? null : buscarFicha(idCidadao)),
-    [idCidadao],
+    async () => (cadastro === null ? null : buscarFicha(cadastro.nrCns)),
+    [cadastro?.nrCns],
   );
 
-  if (idCidadao === null) return <PedirLogin mensagem="Entre na sua conta para ver ou editar a ficha de saúde." destino="ficha" />;
+  if (cadastro === null) return <PedirLogin mensagem="Entre na sua conta para ver ou editar a ficha de saúde." destino="ficha" />;
   if (carregando) return <Loading />;
   if (erro) return <MensagemErro mensagem={erro} onRetry={recarregar} />;
-  return <FormularioFicha idCidadao={idCidadao} ficha={dados} />;
+  return <FormularioFicha cadastro={cadastro} ficha={dados} />;
 }

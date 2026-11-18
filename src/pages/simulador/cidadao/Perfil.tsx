@@ -39,7 +39,9 @@ export default function Perfil() {
   // Cadastro (API Java) e ficha de saúde (prévia, só no front) juntos.
   const { dados, carregando, erro, recarregar } = useCarregar(async () => {
     if (idCidadao === null) return null;
-    const [cidadao, ficha] = await Promise.all([buscarCidadao(idCidadao), buscarFicha(idCidadao)]);
+    // A ficha é procurada pelo Cartão SUS do cadastro que a API devolveu (não pelo id).
+    const cidadao = await buscarCidadao(idCidadao);
+    const ficha = await buscarFicha(cidadao.nrCns);
     return { cidadao, ficha };
   }, [idCidadao, estado.cidadaos, estado.fichas]);
 
