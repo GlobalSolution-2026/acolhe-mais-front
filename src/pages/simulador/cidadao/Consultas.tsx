@@ -15,6 +15,7 @@ import MensagemErro from '../../../components/MensagemErro';
 import { BOTAO_CONTORNO, BOTAO_EMERGENCIA, BOTAO_PRIMARIO } from '../../../components/celular/classes';
 import PedirLogin from '../../../components/celular/PedirLogin';
 import { useSimulador } from '../../../context/useSimulador';
+import { useAvisos } from '../../../hooks/useAvisos';
 import { useCarregar } from '../../../hooks/useCarregar';
 import { fmtDiaHora } from '../../../lib/datas';
 import { agora } from '../../../lib/relogio';
@@ -104,6 +105,8 @@ export default function Consultas() {
     async () => (await listarConsultas()).filter((c) => c.idCidadao === idCidadao),
     [idCidadao, estado.consultas],
   );
+  // Confirmar ou cancelar muda os pedidos de confirmação: o sino do celular busca de novo.
+  const { recarregar: recarregarAvisos } = useAvisos();
 
   if (idCidadao === null) return <PedirLogin mensagem="Entre para ver e confirmar suas consultas." />;
   if (carregando) return <Loading />;
@@ -118,6 +121,7 @@ export default function Consultas() {
       await acao();
       setSucesso(mensagemSucesso);
       recarregar();
+      recarregarAvisos();
     } catch (e) {
       setErroAcao(mensagemDoErro(e));
     } finally {
