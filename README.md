@@ -12,7 +12,7 @@ Projeto da **Global Solution FIAP 2026/2** (tema CitizenTech) · Front-end · ve
 | **Vercel (site publicado)** | https://acolhe-mais-gs.vercel.app/ |
 | **API Java (Spring Boot)** | https://acolhe-mais-java.onrender.com · repositório: https://github.com/GlobalSolution-2026/Acolhe-Mais-Java |
 | **API Flask (IA)** | https://acolhe-mais-ia.onrender.com · repositório: https://github.com/GlobalSolution-2026/Acolhe-Mais_IA |
-| **YouTube (vídeo de apresentação)** | [PREENCHER: link do YouTube] |
+| **YouTube (vídeo de apresentação)** | https://youtu.be/buTKgk9FUnY |
 
 > As APIs estão no plano gratuito do Render, que "dorme" sem uso: a primeira chamada pode levar até um minuto.
 
