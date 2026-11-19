@@ -241,6 +241,6 @@ No simulador, o painel **"Perfis para testar"** entra com um clique. A senha das
 
 ## Contato
 
-- **E-mail do grupo:** [PREENCHER: e-mail de contato]
+- **E-mail do grupo:** ac.bautzer@hotmail.com
 - **Integrantes:** pelo GitHub e pelo LinkedIn de cada pessoa, na tabela acima.
 - **Dúvidas sobre o projeto:** abra uma *issue* em https://github.com/GlobalSolution-2026/acolhe-mais-front/issues
